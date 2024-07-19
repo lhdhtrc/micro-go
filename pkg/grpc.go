@@ -6,14 +6,14 @@ import (
 	"net"
 )
 
-func (core *CoreEntity) GrpcServer(handle func(server *grpc.Server), address string) *grpc.Server {
+func (core *CoreEntity) GrpcServer(handle func(server *grpc.Server), address string) {
 	logPrefix := "install grpc server"
 	core.logger.Info(fmt.Sprintf("%s %s %s", logPrefix, address, "start ->"))
 
 	listen, err := net.Listen("tcp", address)
 	if err != nil {
 		core.logger.Error(fmt.Sprintf("%s %s", logPrefix, err.Error()))
-		return nil
+		return
 	}
 	server := grpc.NewServer()
 
@@ -30,5 +30,5 @@ func (core *CoreEntity) GrpcServer(handle func(server *grpc.Server), address str
 		}
 	}()
 
-	return server
+	core.Server = server
 }
