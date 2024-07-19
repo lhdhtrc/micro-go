@@ -6,7 +6,6 @@ import (
 )
 
 type CoreEntity struct {
+	server *grpc.Server
 	logger *zap.Logger
-
-	Server *grpc.Server
 }

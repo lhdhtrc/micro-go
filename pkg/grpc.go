@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func (core *CoreEntity) GrpcServer(handle func(server *grpc.Server), address string) {
+func (core *CoreEntity) InstallServer(handle func(server *grpc.Server), address string) {
 	logPrefix := "install grpc server"
 	core.logger.Info(fmt.Sprintf("%s %s %s", logPrefix, address, "start ->"))
 
@@ -30,5 +30,9 @@ func (core *CoreEntity) GrpcServer(handle func(server *grpc.Server), address str
 		}
 	}()
 
-	core.Server = server
+	core.server = server
+}
+
+func (core *CoreEntity) UninstallServer() {
+	core.server.Stop()
 }
