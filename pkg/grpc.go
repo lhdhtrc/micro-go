@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func (core *CoreEntity) InstallServer(handle func(server *grpc.Server), address string) {
+func (core *CoreEntity) InstallServer(handle func(server *grpc.Server), address string, options ...grpc.ServerOption) {
 	logPrefix := "install grpc server"
 	core.logger.Info(fmt.Sprintf("%s %s %s", logPrefix, address, "start ->"))
 
@@ -15,7 +15,7 @@ func (core *CoreEntity) InstallServer(handle func(server *grpc.Server), address 
 		core.logger.Error(fmt.Sprintf("%s %s", logPrefix, err.Error()))
 		return
 	}
-	server := grpc.NewServer()
+	server := grpc.NewServer(options...)
 
 	/*-------------------------------------Register Microservice---------------------------------*/
 	handle(server)
