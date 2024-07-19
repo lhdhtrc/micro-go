@@ -17,7 +17,7 @@ func main() {
 	instance := micro.New(logger)
 	
 	// How do I start a grpc service? 
-	instance.GrpcServer(func(server *grpc.Server) {
+	instance.InstallServer(func(server *grpc.Server) {
         
 	}, "127.0.0.1:8080")
 }
