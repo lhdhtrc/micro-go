@@ -3,6 +3,8 @@ module github.com/lhdhtrc/micro-go
 go 1.22.1
 
 require (
+	github.com/lhdhtrc/func-go v0.1.4 // indirect
+	github.com/lhdhtrc/task-go v0.0.8 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
