@@ -18,7 +18,9 @@ func (core *CoreEntity) InstallServer(handle func(server *grpc.Server), address 
 	server := grpc.NewServer(options...)
 
 	/*-------------------------------------Register Microservice---------------------------------*/
-	handle(server)
+	if handle != nil {
+		handle(server)
+	}
 	/*-------------------------------------Register Microservice---------------------------------*/
 
 	core.logger.Info(fmt.Sprintf("%s %s", logPrefix, "register server done ->"))
