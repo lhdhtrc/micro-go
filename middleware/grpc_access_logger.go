@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var accessLoggerMetadataKeys = []string{"ClientName", "ClientType", "ClientSystem", "Ip", "Address", "AccountId", "AppId"}
+var accessLoggerMetadataKeys = []string{"ClientName", "ClientType", "ClientSystem", "Ip", "Address", "AccountId", "AppId", "Trace"}
 
 var accessLoggerClientTypeMap = map[string]int{
 	"浏览器":   1,
