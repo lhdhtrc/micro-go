@@ -28,7 +28,7 @@ func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInter
 		if handle != nil {
 			loggerMap := make(map[string]interface{})
 
-			traceId := md.Get("TraceId")
+			traceId := md.Get("trace-id")
 			if len(traceId) != 0 {
 				loggerMap["trace_id"] = traceId[0]
 			} else {
@@ -40,17 +40,17 @@ func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInter
 				loggerMap["ip"] = ip[0]
 			}
 
-			clientName := md.Get("ClientName")
+			clientName := md.Get("client-name")
 			if len(clientName) != 0 {
 				loggerMap["client_name"] = clientName[0]
 			}
 
-			clientType := md.Get("ClientType")
+			clientType := md.Get("client-type")
 			if len(clientName) != 0 {
 				loggerMap["client_type"] = clientType[0]
 			}
 
-			clientSystem := md.Get("ClientSystem")
+			clientSystem := md.Get("client-system")
 			if len(clientSystem) != 0 {
 				loggerMap["client_system"] = clientSystem[0]
 			}
