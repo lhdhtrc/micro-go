@@ -3,26 +3,12 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"time"
 )
-
-var accessLoggerMetadataKeys = []string{"ClientName", "ClientType", "ClientSystem", "Ip", "Address", "AccountId", "AppId", "Trace"}
-
-var accessLoggerClientTypeMap = map[string]int{
-	"浏览器":   1,
-	"桌面软件":  2,
-	"APP应用": 3,
-	"服务调用":  4,
-}
-var accessLoggerClientSystemMap = map[string]int{
-	"windows": 1,
-	"macos":   2,
-	"linux":   3,
-	"android": 4,
-	"ios":     5,
-}
 
 func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -32,50 +18,61 @@ func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInter
 		// 调用下一个拦截器或服务方法
 		resp, err := handler(ctx, req)
 
+		status := 200
 		elapsed := time.Since(start)
 
-		if console {
-			// todo 控制台输出
+		if err != nil {
+			status = 400
 		}
 
 		if handle != nil {
 			loggerMap := make(map[string]interface{})
-			for _, key := range accessLoggerMetadataKeys {
-				item := md.Get(key)
-				if len(item) != 0 {
-					if key == "ClientType" {
-						if val, ok := accessLoggerClientTypeMap[item[0]]; ok {
-							loggerMap[key] = val
-						} else {
-							loggerMap[key] = 0
-						}
-					} else if key == "ClientSystem" {
-						if val, ok := accessLoggerClientSystemMap[item[0]]; ok {
-							loggerMap[key] = val
-						} else {
-							loggerMap[key] = 0
-						}
-					} else {
-						loggerMap[key] = item[0]
-					}
-				} else {
-					if key == "ClientType" || key == "ClientSystem" {
-						loggerMap[key] = 0
-					} else {
-						loggerMap[key] = ""
-					}
-				}
+
+			traceId := md.Get("TraceId")
+			if len(traceId) != 0 {
+				loggerMap["trace_id"] = traceId[0]
+			} else {
+				loggerMap["trace_id"] = uuid.New().String()
 			}
 
-			loggerMap["Method"] = "grpc"
-			loggerMap["Path"] = info.FullMethod
-			loggerMap["Request"] = req
-			loggerMap["Response"] = resp
-			loggerMap["Status"] = 200
-			loggerMap["Timer"] = elapsed.String()
+			ip := md.Get("x-real-ip")
+			if len(ip) != 0 {
+				loggerMap["ip"] = ip[0]
+			}
+
+			clientName := md.Get("ClientName")
+			if len(clientName) != 0 {
+				loggerMap["client_name"] = clientName[0]
+			}
+
+			clientType := md.Get("ClientType")
+			if len(clientName) != 0 {
+				loggerMap["client_type"] = clientType[0]
+			}
+
+			clientSystem := md.Get("ClientSystem")
+			if len(clientSystem) != 0 {
+				loggerMap["client_system"] = clientSystem[0]
+			}
+
+			loggerMap["status"] = 200
+			loggerMap["timer"] = elapsed.String()
+
+			loggerMap["method"] = "grpc"
+			loggerMap["path"] = info.FullMethod
+
+			request, _ := json.Marshal(req)
+			loggerMap["request"] = string(request)
+
+			response, _ := json.Marshal(resp)
+			loggerMap["response"] = string(response)
 
 			b, _ := json.Marshal(loggerMap)
 			handle(b)
+		}
+
+		if console {
+			fmt.Printf("[%s] [GRPC]:[%s] [%s]-[%d]\n", time.Now().Format(time.DateTime), info.FullMethod, elapsed.String(), status)
 		}
 
 		return resp, err
