@@ -58,7 +58,7 @@ func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInter
 			loggerMap["status"] = 200
 			loggerMap["timer"] = elapsed.String()
 
-			loggerMap["method"] = "grpc"
+			loggerMap["method"] = "GRPC"
 			loggerMap["path"] = info.FullMethod
 
 			request, _ := json.Marshal(req)
