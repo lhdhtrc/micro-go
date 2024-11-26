@@ -29,6 +29,8 @@ func TestRegister(t *testing.T) {
 		MaxRetry:      3,
 	}
 
+	// todo 测试
+
 	// 创建一个服务节点
 	service := &micro.ServiceNode{
 		Name: "test-service",
