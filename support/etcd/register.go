@@ -120,10 +120,12 @@ func (s *RegisterInstance) retry() {
 			s.log(micro.Info, fmt.Sprintf("etcd retry lease: %d/%d", s.retryCount, s.config.MaxRetry))
 		}
 
-		s.initLease()
-
-		if s.retryAfter != nil {
-			s.retryAfter()
+		if err := s.initLease(); err != nil {
+			s.retry()
+		} else {
+			if s.retryAfter != nil {
+				s.retryAfter()
+			}
 		}
 	}
 }
