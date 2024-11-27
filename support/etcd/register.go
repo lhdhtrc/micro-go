@@ -38,7 +38,10 @@ type RegisterInstance struct {
 	log         func(level micro.LogLevel, message string)
 }
 
-func (s *RegisterInstance) Install(service *micro.ServiceNode) {
+func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
 	val, _ := json.Marshal(service)
 
 	service.Lease = int(s.lease)
@@ -46,7 +49,8 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) {
 	service.OuterNetIp = s.config.OuterNetIp
 	service.InternalNetIp = s.config.InternalNetIp
 
-	_, _ = s.client.Put(context.Background(), fmt.Sprintf("/%s/%s/%d", s.config.Namespace, service.Name, s.lease), string(val), clientv3.WithLease(s.lease))
+	_, err := s.client.Put(ctx, fmt.Sprintf("/%s/%s/%d", s.config.Namespace, service.Name, s.lease), string(val), clientv3.WithLease(s.lease))
+	return err
 }
 func (s *RegisterInstance) Uninstall() {
 	defer s.cancel()
