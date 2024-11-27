@@ -1,23 +1,25 @@
 package etcd
 
 import (
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"google.golang.org/grpc"
-	"testing"
-	"time"
-
+	"fmt"
 	micro "github.com/lhdhtrc/micro-go/core"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"runtime"
+	"testing"
 )
 
 func TestRegister(t *testing.T) {
+	// routine 2
 	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{"127.0.0.1:2379"},
-		DialTimeout: time.Second, DialOptions: []grpc.DialOption{grpc.WithBlock()},
+		Endpoints: []string{"192.168.1.100:10206"},
+		Username:  "root",
+		Password:  "123456",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cli.Close()
+	// routine 8
 
 	// 创建一个服务配置
 	config := &micro.ServiceConfig{
@@ -29,25 +31,50 @@ func TestRegister(t *testing.T) {
 		MaxRetry:      3,
 	}
 
-	// todo 测试
-
 	// 创建一个服务节点
 	service := &micro.ServiceNode{
 		Name: "test-service",
 	}
 
 	// 初始化注册实例
-	reg := NewRegister(cli, config)
+	reg, err := NewRegister(cli, config)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// routine 7
 
-	// 安装服务
-	reg.Install(service)
+	// 服务重试之前（如果不成功则会继续执行该函数）
+	reg.WithRetryBefore(func() {
+		fmt.Println("重试之前", runtime.NumGoroutine())
+	})
+	// 服务重试成功之后
+	reg.WithRetryAfter(func() {
+		// 将节点信息重新注册到注册中心
+		_ = reg.Install(service)
+		// 重新续约
+		go reg.SustainLease()
 
-	// 验证服务是否注册成功
-	//expectedKey := fmt.Sprintf("/%s/%s/%d", config.Namespace, service.Name, register.lease)
-	//expectedVal, _ := json.Marshal(service)
-	//actualVal, err := mockClient.KV.Get(context.Background(), expectedKey)
-	//require.NoError(t, err)
-	//assert.Equal(t, 1, len(actualVal.Kvs))
-	//assert.Equal(t, expectedKey, string(actualVal.Kvs[0].Key))
-	//assert.Equal(t, string(expectedVal), string(actualVal.Kvs[0].Value))
+		fmt.Println("重试之后", runtime.NumGoroutine())
+	})
+	// 使用日志
+	reg.WithLog(func(level micro.LogLevel, message string) {
+		fmt.Println("log", level, message)
+	})
+
+	// 将服务节点信息注册到注册中心
+	if err := reg.Install(service); err != nil {
+		fmt.Println("install")
+		return
+	}
+	// routine 7
+
+	// 续约保活，在lease失效后会移除服务节点信息
+	go reg.SustainLease()
+	// routine 8
+
+	// 非必须
+	for {
+
+	}
 }
