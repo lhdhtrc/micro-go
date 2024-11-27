@@ -12,8 +12,6 @@ func TestRegister(t *testing.T) {
 	// routine 2
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"192.168.1.100:10206"},
-		Username:  "root",
-		Password:  "123456",
 	})
 	if err != nil {
 		t.Fatal(err)
