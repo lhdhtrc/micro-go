@@ -74,15 +74,17 @@ func (s *RegisterInstance) WithRetryAfter(handle func()) {
 }
 
 // initLease 初始化租约
-func (s *RegisterInstance) initLease() {
-	grant, err := s.client.Grant(s.ctx, int64(s.config.TTL))
+func (s *RegisterInstance) initLease() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	grant, err := s.client.Grant(ctx, int64(s.config.TTL))
 	if err != nil {
-		s.log(micro.Error, err.Error())
-		s.retry()
-		return
+		return err
 	}
 	s.lease = grant.ID
-	go s.sustainLease()
+
+	return nil
 }
 
 // sustainLease 保持租约
