@@ -87,8 +87,8 @@ func (s *RegisterInstance) initLease() error {
 	return nil
 }
 
-// sustainLease 保持租约
-func (s *RegisterInstance) sustainLease() {
+// SustainLease 保持租约
+func (s *RegisterInstance) SustainLease() {
 	lease, _ := s.client.KeepAlive(s.ctx, s.lease)
 
 	for {
