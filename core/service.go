@@ -1,12 +1,11 @@
 package micro
 
 import (
-	"context"
 	"errors"
 )
 
 type Register interface {
-	Install(service *ServiceNode)
+	Install(service *ServiceNode) error
 	Uninstall()
 	WithRetryBefore(func())
 	WithRetryAfter(func())
@@ -14,13 +13,9 @@ type Register interface {
 }
 
 type Discovery interface {
-	GetService(ctx context.Context, name string) ([]*ServiceNode, error)
-	Watcher(ctx context.Context, namespace string) (Watcher, error)
-}
-
-type Watcher interface {
-	Next() ([]*ServiceNode, error)
-	Stop() error
+	GetService(name string) ([]*ServiceNode, error)
+	Watcher()
+	Unwatch()
 }
 
 type LogLevel string
