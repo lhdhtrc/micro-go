@@ -27,7 +27,6 @@ type RegisterInstance struct {
 	config *micro.ServiceConfig
 	client *clientv3.Client
 	lease  clientv3.LeaseID
-	kv     clientv3.KV
 
 	ctx    context.Context
 	cancel context.CancelFunc
