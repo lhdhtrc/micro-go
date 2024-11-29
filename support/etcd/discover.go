@@ -37,7 +37,7 @@ func (s *DiscoverInstance) Watcher() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	//core.Find(prefix, init)
+	core.Find(prefix, init)
 	wc := s.client.Watch(ctx, s.config.Namespace, clientv3.WithPrefix(), clientv3.WithPrevKV())
 	for v := range wc {
 		for _, e := range v.Events {
