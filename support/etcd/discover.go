@@ -79,7 +79,7 @@ func (s *DiscoverInstance) bootstrap() error {
 	return nil
 }
 
-// adapter 付出处理适配器
+// adapter 服务发现适配器
 func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 	var (
 		key   string
