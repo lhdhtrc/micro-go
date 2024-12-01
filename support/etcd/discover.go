@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func NewDiscover(client *clientv3.Client, config *micro.ServiceConfig) *DiscoverInstance {
+func NewDiscover(client *clientv3.Client, config *micro.ServiceConfig) (*DiscoverInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &DiscoverInstance{
@@ -20,10 +20,9 @@ func NewDiscover(client *clientv3.Client, config *micro.ServiceConfig) *Discover
 		config:  config,
 		service: make(micro.ServiceInstance),
 	}
+	err := instance.bootstrap()
 
-	instance.bootstrap()
-
-	return instance
+	return instance, err
 }
 
 type DiscoverInstance struct {
@@ -63,13 +62,10 @@ func (s *DiscoverInstance) WithLog(handle func(level micro.LogLevel, message str
 }
 
 // bootstrap 初始化引导
-func (s *DiscoverInstance) bootstrap() {
+func (s *DiscoverInstance) bootstrap() error {
 	res, err := s.client.Get(s.ctx, s.config.Namespace, clientv3.WithPrefix())
 	if err != nil {
-		if s.log != nil {
-			s.log(micro.Error, err.Error())
-		}
-		return
+		return err
 	}
 
 	for _, item := range res.Kvs {
@@ -79,6 +75,8 @@ func (s *DiscoverInstance) bootstrap() {
 			s.service[key] = append(s.service[key], &val)
 		}
 	}
+
+	return nil
 }
 
 // adapter 付出处理适配器
