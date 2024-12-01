@@ -4,10 +4,9 @@ go 1.22.1
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/lhdhtrc/func-go v0.2.3
+	github.com/lhdhtrc/func-go v0.2.4
 	github.com/lhdhtrc/task-go v0.0.8
 	go.etcd.io/etcd/client/v3 v3.5.17
-	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.67.1
 )
 
@@ -19,6 +18,7 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.17 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
