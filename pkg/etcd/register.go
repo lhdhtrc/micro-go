@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	micro "github.com/lhdhtrc/micro-go/core"
+	micro "github.com/lhdhtrc/micro-go/pkg"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"time"
 )

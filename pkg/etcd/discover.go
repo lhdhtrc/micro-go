@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lhdhtrc/func-go/array"
-	micro "github.com/lhdhtrc/micro-go/core"
+	micro "github.com/lhdhtrc/micro-go/pkg"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"strings"
 )

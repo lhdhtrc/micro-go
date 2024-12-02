@@ -2,7 +2,7 @@ package etcd
 
 import (
 	"fmt"
-	micro "github.com/lhdhtrc/micro-go/core"
+	micro "github.com/lhdhtrc/micro-go/pkg"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"runtime"
 	"testing"
