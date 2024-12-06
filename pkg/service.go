@@ -2,6 +2,7 @@ package micro
 
 import (
 	"errors"
+	"google.golang.org/grpc"
 )
 
 type Register interface {
@@ -65,4 +66,24 @@ func (s ServiceInstance) GetNodes(service string) ([]*ServiceNode, error) {
 		return v, nil
 	}
 	return nil, errors.New("there is currently no available node for this service")
+}
+
+// NewRegisterService 注册服务集合
+func NewRegisterService(raw []grpc.ServiceDesc, reg Register) []error {
+	var errs []error
+	for _, desc := range raw {
+		node := &ServiceNode{
+			Name:   desc.ServiceName,
+			Method: make(map[string]string),
+		}
+
+		for _, item := range desc.Methods {
+			node.Method[item.MethodName] = ""
+		}
+
+		if err := reg.Install(node); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
 }
