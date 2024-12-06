@@ -69,7 +69,7 @@ func (s ServiceInstance) GetNodes(service string) ([]*ServiceNode, error) {
 }
 
 // NewRegisterService 注册服务集合
-func NewRegisterService(raw []grpc.ServiceDesc, reg Register) []error {
+func NewRegisterService(raw []*grpc.ServiceDesc, reg Register) []error {
 	var errs []error
 	for _, desc := range raw {
 		node := &ServiceNode{
