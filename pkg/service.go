@@ -35,8 +35,9 @@ type ServiceNode struct {
 	Lease int    `json:"lease"`
 	AppId string `json:"app_id"`
 
-	OuterNetIp    string `json:"outer_net_ip"`
-	InternalNetIp string `json:"internal_net_ip"`
+	Network    string `json:"network"`
+	OuterAddr  string `json:"outer_addr"`
+	InsideAddr string `json:"inside_addr"`
 }
 
 func (s *ServiceNode) ValidMethod(method string) bool {
@@ -54,8 +55,9 @@ type ServiceConfig struct {
 	MaxRetry  uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
 	TTL       uint32 `json:"ttl" bson:"ttl" yaml:"ttl" mapstructure:"ttl"`
 
-	OuterNetIp    string `json:"outer_net_ip" bson:"outer_net_ip" yaml:"outer_net_ip" mapstructure:"outer_net_ip"`
-	InternalNetIp string `json:"internal_net_ip" bson:"internal_net_ip" yaml:"internal_net_ip" mapstructure:"internal_net_ip"`
+	Network    string `json:"network" bson:"network" yaml:"network" mapstructure:"network"`
+	OuterAddr  string `json:"outer_addr" bson:"outer_addr" yaml:"outer_addr" mapstructure:"outer_addr"`
+	InsideAddr string `json:"inside_addr" bson:"inside_addr" yaml:"inside_addr" mapstructure:"inside_addr"`
 }
 
 // ServiceInstance 一般适用于服务发现

@@ -45,8 +45,9 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 
 	service.Lease = int(s.lease)
 	service.AppId = s.config.AppId
-	service.OuterNetIp = s.config.OuterNetIp
-	service.InternalNetIp = s.config.InternalNetIp
+	service.Network = s.config.Network
+	service.OuterAddr = s.config.OuterAddr
+	service.OuterAddr = s.config.OuterAddr
 
 	_, err := s.client.Put(ctx, fmt.Sprintf("/%s/%s/%d", s.config.Namespace, service.Name, s.lease), string(val), clientv3.WithLease(s.lease))
 	return err
