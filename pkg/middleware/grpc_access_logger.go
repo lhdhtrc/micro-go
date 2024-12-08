@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInterceptor {
+func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
 		md, _ := metadata.FromIncomingContext(ctx)
@@ -68,11 +68,7 @@ func GrpcAccessLogger(handle func(b []byte), console bool) grpc.UnaryServerInter
 			loggerMap["response"] = string(response)
 
 			b, _ := json.Marshal(loggerMap)
-			handle(b)
-		}
-
-		if console {
-			fmt.Printf("[%s] [GRPC]:[%s] [%s]-[%d]\n", time.Now().Format(time.DateTime), info.FullMethod, elapsed.String(), status)
+			handle(b, fmt.Sprintf("[%s] [GRPC]:[%s] [%s]-[%d]\n", time.Now().Format(time.DateTime), info.FullMethod, elapsed.String(), status))
 		}
 
 		return resp, err
