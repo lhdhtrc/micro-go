@@ -17,8 +17,8 @@ github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/lhdhtrc/func-go v0.2.4 h1:jbFgXzDw9lGPtB9CKB6EX9+l5aqJ9VD+edOTbcAlgL8=
 github.com/lhdhtrc/func-go v0.2.4/go.mod h1:7ipMminEb+FfG1h4GJreJiKkzYe7hV06xGuE8bZCu/A=
-github.com/lhdhtrc/task-go v0.0.8 h1:wO/NhtPS6F3wUrC0YSQ8AERX3Z+66E1zmv0YsHw2Vpk=
-github.com/lhdhtrc/task-go v0.0.8/go.mod h1:y/82sY1546fVW72DhNkg5hc9S23PZlUS5uhmTQLOWAE=
+github.com/lhdhtrc/task-go v0.0.9 h1:vlPifhKZibMOMyvexIOiSxNHBhpmUc9XDxowkOamXg4=
+github.com/lhdhtrc/task-go v0.0.9/go.mod h1:IL4HK45k+789u6SwtHad0iUohXuyoCfN+T2U4749AR8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
