@@ -9,7 +9,24 @@ import (
 	"reflect"
 )
 
-func InitCertTask(core *task.CoreEntity, dir string, config interface{}) {
+func ReadConfigTask(core *task.Instance, source []string, config []interface{}) {
+	for i, it := range source {
+		core.Add(&task.Raw{
+			Id: fmt.Sprintf("READ_CONFIG_%d", i),
+			Handle: func() {
+				bytes, err := file.ReadRemote(it)
+				if err != nil {
+					fmt.Println(err.Error())
+					return
+				}
+				_ = json.Unmarshal(bytes, config[i])
+				return
+			},
+		})
+	}
+}
+
+func ReadCertAndWriteLocalTask(core *task.Instance, dir string, config interface{}) {
 	dirPath := filepath.Join("dep", "cert", dir)
 
 	// 遍历config的字段
@@ -26,8 +43,8 @@ func InitCertTask(core *task.CoreEntity, dir string, config interface{}) {
 			local := filepath.Join(dirPath, f)
 			fieldValue.SetString(local)
 
-			core.Add(&task.RawEntity{
-				Id: fmt.Sprintf("INIT_CERT_%d", i),
+			core.Add(&task.Raw{
+				Id: fmt.Sprintf("READ_CERT_AND_WRITER_LOCAL_%d", i),
 				Handle: func() {
 					read, err := file.ReadRemote(remote)
 					if err != nil {
@@ -38,22 +55,5 @@ func InitCertTask(core *task.CoreEntity, dir string, config interface{}) {
 				},
 			})
 		}
-	}
-}
-
-func InitConfigTask(core *task.CoreEntity, source []string, config []interface{}) {
-	for i, it := range source {
-		core.Add(&task.RawEntity{
-			Id: fmt.Sprintf("INIT_CONFIG_%d", i),
-			Handle: func() {
-				bytes, err := file.ReadRemote(it)
-				if err != nil {
-					fmt.Println(err.Error())
-					return
-				}
-				_ = json.Unmarshal(bytes, config[i])
-				return
-			},
-		})
 	}
 }
