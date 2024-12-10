@@ -30,8 +30,8 @@ const (
 
 // ServiceNode 一般适用于服务注册
 type ServiceNode struct {
-	Name   string            `json:"name"`
-	Method map[string]string `json:"method"`
+	Name   string          `json:"name"`
+	Method map[string]bool `json:"method"`
 
 	Lease int    `json:"lease"`
 	AppId string `json:"app_id"`
@@ -77,11 +77,11 @@ func NewRegisterService(raw []*grpc.ServiceDesc, reg Register) []error {
 	for _, desc := range raw {
 		node := &ServiceNode{
 			Name:   desc.ServiceName,
-			Method: make(map[string]string),
+			Method: make(map[string]bool),
 		}
 
 		for _, item := range desc.Methods {
-			node.Method[item.MethodName] = ""
+			node.Method[item.MethodName] = true
 		}
 
 		if err := reg.Install(node); err != nil {
