@@ -44,8 +44,8 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	service.Lease = int(s.lease)
 	service.AppId = s.config.AppId
 	service.Network = s.config.Network
-	service.OuterAddr = s.config.OuterAddr
-	service.OuterAddr = s.config.OuterAddr
+	service.OuterNetAddr = s.config.OuterNetAddr
+	service.InternalNetAddr = s.config.InternalNetAddr
 	service.RunDate = time.Now().Format(time.DateTime)
 
 	val, _ := json.Marshal(service)

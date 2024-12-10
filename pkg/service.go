@@ -36,9 +36,9 @@ type ServiceNode struct {
 	Lease int    `json:"lease"`
 	AppId string `json:"app_id"`
 
-	Network    string `json:"network"`
-	OuterAddr  string `json:"outer_addr"`
-	InsideAddr string `json:"inside_addr"`
+	Network         string `json:"network"`
+	OuterNetAddr    string `json:"outer_net_addr"`
+	InternalNetAddr string `json:"internal_net_addr"`
 
 	RunDate string `json:"run_date"`
 }
@@ -58,9 +58,9 @@ type ServiceConfig struct {
 	MaxRetry  uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
 	TTL       uint32 `json:"ttl" bson:"ttl" yaml:"ttl" mapstructure:"ttl"`
 
-	Network    string `json:"network" bson:"network" yaml:"network" mapstructure:"network"`
-	OuterAddr  string `json:"outer_addr" bson:"outer_addr" yaml:"outer_addr" mapstructure:"outer_addr"`
-	InsideAddr string `json:"inside_addr" bson:"inside_addr" yaml:"inside_addr" mapstructure:"inside_addr"`
+	Network         string `json:"network" bson:"network" yaml:"network" mapstructure:"network"`
+	OuterNetAddr    string `json:"outer_net_addr" bson:"outer_net_addr" yaml:"outer_net_addr" mapstructure:"outer_net_addr"`
+	InternalNetAddr string `json:"internal_net_addr" bson:"internal_net_addr" yaml:"internal_net_addr" mapstructure:"internal_net_addr"`
 }
 
 // ServiceInstance 一般适用于服务发现
