@@ -46,6 +46,7 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	service.Network = s.config.Network
 	service.OuterAddr = s.config.OuterAddr
 	service.OuterAddr = s.config.OuterAddr
+	service.RunDate = time.Now().Format(time.DateTime)
 
 	val, _ := json.Marshal(service)
 

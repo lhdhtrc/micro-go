@@ -39,6 +39,8 @@ type ServiceNode struct {
 	Network    string `json:"network"`
 	OuterAddr  string `json:"outer_addr"`
 	InsideAddr string `json:"inside_addr"`
+
+	RunDate string `json:"run_date"`
 }
 
 func (s *ServiceNode) ValidMethod(method string) bool {
