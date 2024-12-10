@@ -49,7 +49,7 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	service.OuterAddr = s.config.OuterAddr
 	service.OuterAddr = s.config.OuterAddr
 
-	_, err := s.client.Put(ctx, fmt.Sprintf("/%s/%s/%d", s.config.Namespace, service.Name, s.lease), string(val), clientv3.WithLease(s.lease))
+	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%d", s.config.Namespace, service.Name, s.lease), string(val), clientv3.WithLease(s.lease))
 	return err
 }
 func (s *RegisterInstance) Uninstall() {
