@@ -41,13 +41,13 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	val, _ := json.Marshal(service)
-
 	service.Lease = int(s.lease)
 	service.AppId = s.config.AppId
 	service.Network = s.config.Network
 	service.OuterAddr = s.config.OuterAddr
 	service.OuterAddr = s.config.OuterAddr
+
+	val, _ := json.Marshal(service)
 
 	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%d", s.config.Namespace, service.Name, s.lease), string(val), clientv3.WithLease(s.lease))
 	return err
