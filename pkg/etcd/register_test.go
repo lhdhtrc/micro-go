@@ -2,7 +2,7 @@ package etcd
 
 import (
 	"fmt"
-	micro "github.com/lhdhtrc/micro-go/pkg"
+	micro "github.com/lhdhtrc/micro-go/pkg/core"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"runtime"
 	"testing"
@@ -23,13 +23,13 @@ func TestRegister(t *testing.T) {
 
 	// 创建一个服务配置
 	config := &micro.ServiceConfig{
-		AppId:      "test-app",
-		Network:    "xxxxx",
-		OuterAddr:  "127.0.0.1",
-		InsideAddr: "127.0.0.1",
-		Namespace:  "test-namespace",
-		TTL:        10,
-		MaxRetry:   3,
+		AppId:           "test-app",
+		Network:         "xxxxx",
+		OuterNetAddr:    "127.0.0.1",
+		InternalNetAddr: "127.0.0.1",
+		Namespace:       "test-namespace",
+		TTL:             10,
+		MaxRetry:        3,
 	}
 
 	// 创建一个服务节点
