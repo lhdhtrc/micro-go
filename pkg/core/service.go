@@ -52,7 +52,6 @@ func (s *ServiceNode) ValidMethod(method string) bool {
 
 // ServiceConfig 服务注册/服务发现配置
 type ServiceConfig struct {
-	Mode      bool   `json:"mode" bson:"mode" yaml:"mode" mapstructure:"mode"`
 	AppId     string `json:"app_id" bson:"app_id" yaml:"app_id" mapstructure:"app_id"`
 	Namespace string `json:"namespace" bson:"namespace" yaml:"namespace" mapstructure:"namespace"`
 	MaxRetry  uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
