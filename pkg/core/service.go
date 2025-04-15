@@ -50,8 +50,8 @@ func (s *ServiceNode) ValidMethod(method string) bool {
 	return false
 }
 
-// ServiceConfig 服务注册/服务发现配置
-type ServiceConfig struct {
+// ServiceConf 服务注册/服务发现配置
+type ServiceConf struct {
 	// 命名控件
 	Namespace string `json:"namespace" bson:"namespace" yaml:"namespace" mapstructure:"namespace"`
 	// 网卡

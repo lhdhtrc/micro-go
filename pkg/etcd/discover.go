@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func NewDiscover(client *clientv3.Client, config *micro.ServiceConfig) (*DiscoverInstance, error) {
+func NewDiscover(client *clientv3.Client, config *micro.ServiceConf) (*DiscoverInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &DiscoverInstance{
@@ -26,7 +26,7 @@ func NewDiscover(client *clientv3.Client, config *micro.ServiceConfig) (*Discove
 }
 
 type DiscoverInstance struct {
-	config *micro.ServiceConfig
+	config *micro.ServiceConf
 	client *clientv3.Client
 
 	ctx    context.Context

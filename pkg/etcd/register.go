@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func NewRegister(appId string, client *clientv3.Client, config *micro.ServiceConfig) (*RegisterInstance, error) {
+func NewRegister(appId string, client *clientv3.Client, config *micro.ServiceConf) (*RegisterInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &RegisterInstance{
@@ -26,7 +26,7 @@ func NewRegister(appId string, client *clientv3.Client, config *micro.ServiceCon
 
 type RegisterInstance struct {
 	appId  string
-	config *micro.ServiceConfig
+	config *micro.ServiceConf
 	client *clientv3.Client
 	lease  clientv3.LeaseID
 

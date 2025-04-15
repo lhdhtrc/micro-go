@@ -22,7 +22,7 @@ func TestRegister(t *testing.T) {
 	// routine 8
 
 	// 创建一个服务配置
-	config := &micro.ServiceConfig{
+	config := &micro.ServiceConf{
 		Network:         "xxxxx",
 		OuterNetAddr:    "127.0.0.1",
 		InternalNetAddr: "127.0.0.1",

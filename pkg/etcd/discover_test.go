@@ -19,7 +19,7 @@ func TestDiscover(t *testing.T) {
 	defer cli.Close()
 
 	// 创建一个服务配置
-	config := &micro.ServiceConfig{
+	config := &micro.ServiceConf{
 		Network:         "xxxxxx",
 		OuterNetAddr:    "127.0.0.1",
 		InternalNetAddr: "127.0.0.1",
