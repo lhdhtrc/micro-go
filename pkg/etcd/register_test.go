@@ -23,7 +23,6 @@ func TestRegister(t *testing.T) {
 
 	// 创建一个服务配置
 	config := &micro.ServiceConfig{
-		AppId:           "test-app",
 		Network:         "xxxxx",
 		OuterNetAddr:    "127.0.0.1",
 		InternalNetAddr: "127.0.0.1",
@@ -38,7 +37,7 @@ func TestRegister(t *testing.T) {
 	}
 
 	// 初始化注册实例
-	reg, err := NewRegister(cli, config)
+	reg, err := NewRegister("test-app", cli, config)
 	if err != nil {
 		fmt.Println(err)
 		return

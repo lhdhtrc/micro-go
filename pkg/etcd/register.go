@@ -9,11 +9,12 @@ import (
 	"time"
 )
 
-func NewRegister(client *clientv3.Client, config *micro.ServiceConfig) (*RegisterInstance, error) {
+func NewRegister(appId string, client *clientv3.Client, config *micro.ServiceConfig) (*RegisterInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &RegisterInstance{
 		ctx:    ctx,
+		appId:  appId,
 		cancel: cancel,
 		config: config,
 		client: client,
@@ -24,6 +25,7 @@ func NewRegister(client *clientv3.Client, config *micro.ServiceConfig) (*Registe
 }
 
 type RegisterInstance struct {
+	appId  string
 	config *micro.ServiceConfig
 	client *clientv3.Client
 	lease  clientv3.LeaseID
@@ -42,7 +44,7 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	defer cancel()
 
 	service.Lease = int(s.lease)
-	service.AppId = s.config.AppId
+	service.AppId = s.appId
 	service.Network = s.config.Network
 	service.OuterNetAddr = s.config.OuterNetAddr
 	service.InternalNetAddr = s.config.InternalNetAddr

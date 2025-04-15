@@ -52,14 +52,19 @@ func (s *ServiceNode) ValidMethod(method string) bool {
 
 // ServiceConfig 服务注册/服务发现配置
 type ServiceConfig struct {
-	AppId     string `json:"app_id" bson:"app_id" yaml:"app_id" mapstructure:"app_id"`
+	// 命名控件
 	Namespace string `json:"namespace" bson:"namespace" yaml:"namespace" mapstructure:"namespace"`
-	MaxRetry  uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
-	TTL       uint32 `json:"ttl" bson:"ttl" yaml:"ttl" mapstructure:"ttl"`
-
-	Network         string `json:"network" bson:"network" yaml:"network" mapstructure:"network"`
-	OuterNetAddr    string `json:"outer_net_addr" bson:"outer_net_addr" yaml:"outer_net_addr" mapstructure:"outer_net_addr"`
+	// 网卡
+	Network string `json:"network" bson:"network" yaml:"network" mapstructure:"network"`
+	// 外网地址
+	OuterNetAddr string `json:"outer_net_addr" bson:"outer_net_addr" yaml:"outer_net_addr" mapstructure:"outer_net_addr"`
+	// 内网地址
 	InternalNetAddr string `json:"internal_net_addr" bson:"internal_net_addr" yaml:"internal_net_addr" mapstructure:"internal_net_addr"`
+
+	// 最大重试次数
+	MaxRetry uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
+	// 心跳间隔
+	TTL uint32 `json:"ttl" bson:"ttl" yaml:"ttl" mapstructure:"ttl"`
 }
 
 // ServiceInstance 一般适用于服务发现

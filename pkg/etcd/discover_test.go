@@ -20,7 +20,6 @@ func TestDiscover(t *testing.T) {
 
 	// 创建一个服务配置
 	config := &micro.ServiceConfig{
-		AppId:           "test-app",
 		Network:         "xxxxxx",
 		OuterNetAddr:    "127.0.0.1",
 		InternalNetAddr: "127.0.0.1",
