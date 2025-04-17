@@ -43,6 +43,21 @@ type ServiceNode struct {
 	Methods map[string]bool `json:"methods"`
 }
 
+// ParseMethod 解析方法
+func (ist *ServiceNode) ParseMethod(s ServiceMethods) {
+	for k, _ := range ist.Methods {
+		s[k] = ist.AppId
+	}
+}
+
+// CheckMethod 检查方法
+func (ist *ServiceNode) CheckMethod(sm string) error {
+	if _, ok := ist.Methods[sm]; ok {
+		return nil
+	}
+	return errors.New("service node does not have this method")
+}
+
 // ServiceConf 服务注册/服务发现配置
 type ServiceConf struct {
 	// 命名控件
