@@ -18,7 +18,8 @@ func NewDiscover(client *clientv3.Client, config *micro.ServiceConf) (*DiscoverI
 		cancel:  cancel,
 		client:  client,
 		config:  config,
-		service: make(micro.ServiceInstance),
+		methods: make(micro.ServiceMethods),
+		service: make(micro.ServiceDiscover),
 	}
 	err := instance.bootstrap()
 
@@ -32,13 +33,19 @@ type DiscoverInstance struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	service micro.ServiceInstance
-	log     func(level micro.LogLevel, message string)
+	log func(level micro.LogLevel, message string)
+
+	methods micro.ServiceMethods
+	service micro.ServiceDiscover
 }
 
 // GetService 获取服务
-func (s *DiscoverInstance) GetService(name string) ([]*micro.ServiceNode, error) {
-	return s.service.GetNodes(name)
+func (s *DiscoverInstance) GetService(sm string) ([]*micro.ServiceNode, error) {
+	appId, err := s.methods.GetAppId(sm)
+	if err != nil {
+		return nil, err
+	}
+	return s.service.GetNodes(appId)
 }
 
 // Watcher 服务发现
@@ -98,6 +105,7 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 	}
 
 	key = strings.Replace(key, fmt.Sprintf("/%d", lease), "", 1)
+
 	var val micro.ServiceNode
 	if err := json.Unmarshal(tv, &val); err != nil {
 		if s.log != nil {
@@ -105,6 +113,7 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 		}
 		return
 	}
+	val.ParseMethod(s.methods)
 
 	switch e.Type {
 	// PUT，新增或替换
