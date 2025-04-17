@@ -1,7 +1,7 @@
 package micro
 
 type Network struct {
-	UniqueSN string `json:"unique_sn"`
+	SN       string `json:"sn"`
 	Internal string `json:"internal"`
 	External string `json:"external"`
 }
