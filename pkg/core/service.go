@@ -31,10 +31,13 @@ const (
 
 // ServiceNode 一般适用于服务注册
 type ServiceNode struct {
-	Meta *ServiceMeta `json:"meta"`
+	ProtoCount int             `json:"proto_count"`
+	LeaseId    int             `json:"lease_id"`
+	RunDate    string          `json:"run_date"`
+	Methods    map[string]bool `json:"methods"`
 
-	Network *Network        `json:"network"`
-	Methods map[string]bool `json:"methods"`
+	Network *Network     `json:"network"`
+	Meta    *ServiceMeta `json:"meta"`
 }
 
 // ParseMethod 解析方法
@@ -67,13 +70,9 @@ type ServiceConf struct {
 
 // ServiceMeta 服务元信息
 type ServiceMeta struct {
-	LeaseId    int `json:"lease_id"`
-	ProtoCount int `json:"proto_count"`
-
 	Env     string `json:"env"`
 	AppId   string `json:"app_id"`
 	Version string `json:"version"`
-	RunDate string `json:"run_date"`
 }
 
 // ServiceDiscover 服务发现
@@ -99,7 +98,7 @@ func (s ServiceMethods) GetAppId(sm string) (string, error) {
 // NewRegisterService 注册服务集合
 func NewRegisterService(raw []*grpc.ServiceDesc, reg Register) []error {
 	node := new(ServiceNode)
-	node.Meta.ProtoCount = len(raw)
+	node.ProtoCount = len(raw)
 	node.Methods = make(map[string]bool)
 
 	var errs []error

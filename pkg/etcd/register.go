@@ -43,11 +43,10 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	s.meta.LeaseId = int(s.lease)
-	s.meta.RunDate = time.Now().Format(time.DateTime)
-
 	service.Meta = s.meta
 	service.Network = s.config.Network
+	service.LeaseId = int(s.lease)
+	service.RunDate = time.Now().Format(time.DateTime)
 
 	val, _ := json.Marshal(service)
 
