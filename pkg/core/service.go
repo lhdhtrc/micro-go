@@ -2,6 +2,7 @@ package micro
 
 import (
 	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 )
 
@@ -30,17 +31,16 @@ const (
 
 // ServiceNode 一般适用于服务注册
 type ServiceNode struct {
-	Name   string `json:"name"`
-	Method string `json:"method"`
+	LeaseId    int `json:"lease_id"`
+	ProtoCount int `json:"proto_count"`
 
-	Lease int    `json:"lease"`
-	AppId string `json:"app_id"`
-
-	Network         string `json:"network"`
-	OuterNetAddr    string `json:"outer_net_addr"`
-	InternalNetAddr string `json:"internal_net_addr"`
-
+	Env     string `json:"env"`
+	AppId   string `json:"app_id"`
+	Version string `json:"version"`
 	RunDate string `json:"run_date"`
+
+	Network *Network        `json:"network"`
+	Methods map[string]bool `json:"methods"`
 }
 
 // ServiceConf 服务注册/服务发现配置
@@ -48,11 +48,7 @@ type ServiceConf struct {
 	// 命名控件
 	Namespace string `json:"namespace" bson:"namespace" yaml:"namespace" mapstructure:"namespace"`
 	// 网卡
-	Network string `json:"network" bson:"network" yaml:"network" mapstructure:"network"`
-	// 外网地址
-	OuterNetAddr string `json:"outer_net_addr" bson:"outer_net_addr" yaml:"outer_net_addr" mapstructure:"outer_net_addr"`
-	// 内网地址
-	InternalNetAddr string `json:"internal_net_addr" bson:"internal_net_addr" yaml:"internal_net_addr" mapstructure:"internal_net_addr"`
+	Network *Network `json:"network"`
 
 	// 最大重试次数
 	MaxRetry uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
@@ -72,17 +68,19 @@ func (s ServiceInstance) GetNodes(service string) ([]*ServiceNode, error) {
 
 // NewRegisterService 注册服务集合
 func NewRegisterService(raw []*grpc.ServiceDesc, reg Register) []error {
+	node := new(ServiceNode)
+	node.ProtoCount = len(raw)
+
 	var errs []error
 	for _, desc := range raw {
 		for _, item := range desc.Methods {
-			node := &ServiceNode{
-				Name:   desc.ServiceName,
-				Method: item.MethodName,
-			}
-			if err := reg.Install(node); err != nil {
-				errs = append(errs, err)
-			}
+			node.Methods[fmt.Sprintf("/%s/%s", desc.ServiceName, item.MethodName)] = true
 		}
 	}
+
+	if err := reg.Install(node); err != nil {
+		errs = append(errs, err)
+	}
+
 	return errs
 }
