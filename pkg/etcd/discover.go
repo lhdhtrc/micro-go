@@ -113,7 +113,7 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 	// DELETE
 	case clientv3.EventTypeDelete:
 		s.service[key] = array.Filter(s.service[key], func(index int, item *micro.ServiceNode) bool {
-			return item.Lease != val.Lease
+			return item.LeaseId != val.LeaseId
 		})
 	}
 }
