@@ -95,6 +95,7 @@ func (s ServiceMethods) GetAppId(sm string) (string, error) {
 func NewRegisterService(raw []*grpc.ServiceDesc, reg Register) []error {
 	node := new(ServiceNode)
 	node.ProtoCount = len(raw)
+	node.Methods = make(map[string]bool)
 
 	var errs []error
 	for _, desc := range raw {
