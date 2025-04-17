@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-func NewRegister(appId string, client *clientv3.Client, config *micro.ServiceConf) (*RegisterInstance, error) {
+func NewRegister(client *clientv3.Client, meta *micro.ServiceMeta, config *micro.ServiceConf) (*RegisterInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &RegisterInstance{
 		ctx:    ctx,
-		appId:  appId,
-		cancel: cancel,
+		meta:   meta,
 		config: config,
 		client: client,
+		cancel: cancel,
 	}
 	err := instance.initLease()
 
@@ -25,7 +25,7 @@ func NewRegister(appId string, client *clientv3.Client, config *micro.ServiceCon
 }
 
 type RegisterInstance struct {
-	appId  string
+	meta   *micro.ServiceMeta
 	config *micro.ServiceConf
 	client *clientv3.Client
 	lease  clientv3.LeaseID
@@ -43,14 +43,15 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	service.LeaseId = int(s.lease)
-	service.AppId = s.appId
+	s.meta.LeaseId = int(s.lease)
+	s.meta.RunDate = time.Now().Format(time.DateTime)
+
+	service.Meta = s.meta
 	service.Network = s.config.Network
-	service.RunDate = time.Now().Format(time.DateTime)
 
 	val, _ := json.Marshal(service)
 
-	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%d", s.config.Namespace, service.AppId, s.lease), string(val), clientv3.WithLease(s.lease))
+	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%d", s.config.Namespace, service.Meta.AppId, s.lease), string(val), clientv3.WithLease(s.lease))
 	return err
 }
 func (s *RegisterInstance) Uninstall() {
