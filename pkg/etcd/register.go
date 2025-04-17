@@ -43,16 +43,14 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	service.Lease = int(s.lease)
+	service.LeaseId = int(s.lease)
 	service.AppId = s.appId
 	service.Network = s.config.Network
-	service.OuterNetAddr = s.config.OuterNetAddr
-	service.InternalNetAddr = s.config.InternalNetAddr
 	service.RunDate = time.Now().Format(time.DateTime)
 
 	val, _ := json.Marshal(service)
 
-	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%s/%d", s.config.Namespace, service.Name, service.Method, s.lease), string(val), clientv3.WithLease(s.lease))
+	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%d", s.config.Namespace, service.AppId, s.lease), string(val), clientv3.WithLease(s.lease))
 	return err
 }
 func (s *RegisterInstance) Uninstall() {
