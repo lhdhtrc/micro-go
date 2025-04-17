@@ -71,14 +71,24 @@ type ServiceConf struct {
 	TTL uint32 `json:"ttl" bson:"ttl" yaml:"ttl" mapstructure:"ttl"`
 }
 
-// ServiceInstance 一般适用于服务发现
-type ServiceInstance map[string][]*ServiceNode
+// ServiceDiscover 服务发现
+type ServiceDiscover map[string][]*ServiceNode
 
-func (s ServiceInstance) GetNodes(service string) ([]*ServiceNode, error) {
-	if v, ok := s[service]; ok {
+func (s ServiceDiscover) GetNodes(appId string) ([]*ServiceNode, error) {
+	if v, ok := s[appId]; ok {
 		return v, nil
 	}
-	return nil, errors.New("there is currently no available node for this service")
+	return nil, errors.New("service node not exists")
+}
+
+// ServiceMethods 服务方法
+type ServiceMethods map[string]string
+
+func (s ServiceMethods) GetAppId(sm string) (string, error) {
+	if v, ok := s[sm]; ok {
+		return v, nil
+	}
+	return "", errors.New("service method not exists")
 }
 
 // NewRegisterService 注册服务集合
