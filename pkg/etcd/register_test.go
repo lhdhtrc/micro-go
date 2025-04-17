@@ -23,17 +23,18 @@ func TestRegister(t *testing.T) {
 
 	// 创建一个服务配置
 	config := &micro.ServiceConf{
-		Network:         "xxxxx",
-		OuterNetAddr:    "127.0.0.1",
-		InternalNetAddr: "127.0.0.1",
-		Namespace:       "test-namespace",
-		TTL:             10,
-		MaxRetry:        3,
+		Network: &micro.Network{
+			UniqueSN: "xxxx",
+			Internal: "192.168.1.100",
+			External: "192.168.1.100",
+		},
+		TTL:      10,
+		MaxRetry: 3,
 	}
 
 	// 创建一个服务节点
 	service := &micro.ServiceNode{
-		Name: "test-service",
+		AppId: "test-service",
 	}
 
 	// 初始化注册实例
