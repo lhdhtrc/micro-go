@@ -31,13 +31,7 @@ const (
 
 // ServiceNode 一般适用于服务注册
 type ServiceNode struct {
-	LeaseId    int `json:"lease_id"`
-	ProtoCount int `json:"proto_count"`
-
-	Env     string `json:"env"`
-	AppId   string `json:"app_id"`
-	Version string `json:"version"`
-	RunDate string `json:"run_date"`
+	Meta *ServiceMeta `json:"meta"`
 
 	Network *Network        `json:"network"`
 	Methods map[string]bool `json:"methods"`
@@ -46,7 +40,7 @@ type ServiceNode struct {
 // ParseMethod 解析方法
 func (ist *ServiceNode) ParseMethod(s ServiceMethods) {
 	for k, _ := range ist.Methods {
-		s[k] = ist.AppId
+		s[k] = ist.Meta.AppId
 	}
 }
 
@@ -69,6 +63,17 @@ type ServiceConf struct {
 	MaxRetry uint32 `json:"max_retry" bson:"max_retry" yaml:"max_retry" mapstructure:"max_retry"`
 	// 心跳间隔
 	TTL uint32 `json:"ttl" bson:"ttl" yaml:"ttl" mapstructure:"ttl"`
+}
+
+// ServiceMeta 服务元信息
+type ServiceMeta struct {
+	LeaseId    int `json:"lease_id"`
+	ProtoCount int `json:"proto_count"`
+
+	Env     string `json:"env"`
+	AppId   string `json:"app_id"`
+	Version string `json:"version"`
+	RunDate string `json:"run_date"`
 }
 
 // ServiceDiscover 服务发现
@@ -94,7 +99,7 @@ func (s ServiceMethods) GetAppId(sm string) (string, error) {
 // NewRegisterService 注册服务集合
 func NewRegisterService(raw []*grpc.ServiceDesc, reg Register) []error {
 	node := new(ServiceNode)
-	node.ProtoCount = len(raw)
+	node.Meta.ProtoCount = len(raw)
 	node.Methods = make(map[string]bool)
 
 	var errs []error

@@ -21,7 +21,7 @@ func TestDiscover(t *testing.T) {
 	// 创建一个服务配置
 	config := &micro.ServiceConf{
 		Network: &micro.Network{
-			UniqueSN: "xxxx",
+			SN:       "xxxx",
 			Internal: "192.168.1.100",
 			External: "192.168.1.100",
 		},

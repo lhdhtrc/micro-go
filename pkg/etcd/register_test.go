@@ -24,7 +24,7 @@ func TestRegister(t *testing.T) {
 	// 创建一个服务配置
 	config := &micro.ServiceConf{
 		Network: &micro.Network{
-			UniqueSN: "xxxx",
+			SN:       "xxxx",
 			Internal: "192.168.1.100",
 			External: "192.168.1.100",
 		},
@@ -34,11 +34,13 @@ func TestRegister(t *testing.T) {
 
 	// 创建一个服务节点
 	service := &micro.ServiceNode{
-		AppId: "test-service",
+		Meta: &micro.ServiceMeta{
+			AppId: "test-service",
+		},
 	}
 
 	// 初始化注册实例
-	reg, err := NewRegister("test-app", cli, config)
+	reg, err := NewRegister(cli, &micro.ServiceMeta{}, config)
 	if err != nil {
 		fmt.Println(err)
 		return
