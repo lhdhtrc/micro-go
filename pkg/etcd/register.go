@@ -47,6 +47,7 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	s.config.Kernel.Language = "Golang"
 
 	service.Meta = s.meta
+	service.Kernel = s.config.Kernel
 	service.Network = s.config.Network
 	service.LeaseId = int(s.lease)
 	service.RunDate = time.Now().Format(time.DateTime)
