@@ -81,6 +81,7 @@ func (s *DiscoverInstance) bootstrap() error {
 			key := strings.Replace(string(item.Key), fmt.Sprintf("/%d", item.Lease), "", 1)
 			s.service[key] = append(s.service[key], &val)
 		}
+		val.ParseMethod(s.methods)
 	}
 
 	return nil
