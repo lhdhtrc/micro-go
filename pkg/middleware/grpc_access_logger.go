@@ -28,7 +28,7 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 		if handle != nil {
 			loggerMap := make(map[string]interface{})
 
-			loggerMap["method"] = "REQUEST_METHOD_GRPC"
+			loggerMap["method"] = 5
 			loggerMap["path"] = info.FullMethod
 
 			request, _ := json.Marshal(req)
