@@ -27,7 +27,6 @@ func NewRegister(client *clientv3.Client, meta *micro.Meta, config *micro.Servic
 
 type RegisterInstance struct {
 	meta   *micro.Meta
-	kernel *micro.Kernel
 	config *micro.ServiceConf
 	client *clientv3.Client
 	lease  clientv3.LeaseID
@@ -45,10 +44,9 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	s.kernel.Language = "Golang"
+	s.config.Kernel.Language = "Golang"
 
 	service.Meta = s.meta
-	service.Kernel = s.kernel
 	service.Network = s.config.Network
 	service.LeaseId = int(s.lease)
 	service.RunDate = time.Now().Format(time.DateTime)
