@@ -9,12 +9,13 @@ import (
 	"time"
 )
 
-func NewRegister(client *clientv3.Client, meta *micro.ServiceMeta, config *micro.ServiceConf) (*RegisterInstance, error) {
+func NewRegister(client *clientv3.Client, meta *micro.Meta, config *micro.ServiceConf) (*RegisterInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &RegisterInstance{
-		ctx:    ctx,
-		meta:   meta,
+		ctx:  ctx,
+		meta: meta,
+
 		config: config,
 		client: client,
 		cancel: cancel,
@@ -25,7 +26,8 @@ func NewRegister(client *clientv3.Client, meta *micro.ServiceMeta, config *micro
 }
 
 type RegisterInstance struct {
-	meta   *micro.ServiceMeta
+	meta   *micro.Meta
+	kernel *micro.Kernel
 	config *micro.ServiceConf
 	client *clientv3.Client
 	lease  clientv3.LeaseID
@@ -43,7 +45,10 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
+	s.kernel.Language = "Golang"
+
 	service.Meta = s.meta
+	service.Kernel = s.kernel
 	service.Network = s.config.Network
 	service.LeaseId = int(s.lease)
 	service.RunDate = time.Now().Format(time.DateTime)
