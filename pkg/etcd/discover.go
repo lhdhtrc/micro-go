@@ -3,11 +3,9 @@ package etcd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/lhdhtrc/func-go/array"
 	micro "github.com/lhdhtrc/micro-go/pkg/core"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"strings"
 )
 
 func NewDiscover(client *clientv3.Client, config *micro.ServiceConf) (*DiscoverInstance, error) {
@@ -78,10 +76,9 @@ func (s *DiscoverInstance) bootstrap() error {
 	for _, item := range res.Kvs {
 		var val micro.ServiceNode
 		if err = json.Unmarshal(item.Value, &val); err == nil {
-			key := strings.Replace(string(item.Key), fmt.Sprintf("/%d", item.Lease), "", 1)
-			s.service[key] = append(s.service[key], &val)
+			s.service[val.Meta.AppId] = append(s.service[val.Meta.AppId], &val)
+			val.ParseMethod(s.methods)
 		}
-		val.ParseMethod(s.methods)
 	}
 
 	return nil
@@ -90,22 +87,14 @@ func (s *DiscoverInstance) bootstrap() error {
 // adapter 服务发现适配器
 func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 	var (
-		key   string
-		tv    []byte
-		lease int64
+		tv []byte
 	)
 
 	if e.PrevKv != nil {
-		key = string(e.PrevKv.Key)
 		tv = e.PrevKv.Value
-		lease = e.PrevKv.Lease
 	} else {
-		key = string(e.Kv.Key)
 		tv = e.Kv.Value
-		lease = e.Kv.Lease
 	}
-
-	key = strings.Replace(key, fmt.Sprintf("/%d", lease), "", 1)
 
 	var val micro.ServiceNode
 	if err := json.Unmarshal(tv, &val); err != nil {
@@ -115,6 +104,8 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 		return
 	}
 	val.ParseMethod(s.methods)
+
+	key := val.Meta.AppId
 
 	switch e.Type {
 	// PUT，新增或替换
