@@ -3,7 +3,6 @@ package etcd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/lhdhtrc/func-go/array"
 	micro "github.com/lhdhtrc/micro-go/pkg/core"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -97,8 +96,6 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 		tv = e.Kv.Value
 	}
 
-	fmt.Println(string(tv))
-
 	var val micro.ServiceNode
 	if err := json.Unmarshal(tv, &val); err != nil {
 		if s.log != nil {
@@ -117,7 +114,6 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 	// DELETE
 	case clientv3.EventTypeDelete:
 		s.service[key] = array.Filter(s.service[key], func(index int, item *micro.ServiceNode) bool {
-			fmt.Println(item.LeaseId, val.LeaseId)
 			return item.LeaseId != val.LeaseId
 		})
 	}
