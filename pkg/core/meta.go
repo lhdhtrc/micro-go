@@ -3,6 +3,7 @@ package micro
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -13,8 +14,67 @@ type Meta struct {
 	Version string `json:"version"`
 }
 
+// UserContextMeta 用户上下文元信息
+type UserContextMeta struct {
+	Lang     string `json:"lang"`
+	Session  string `json:"session"`
+	ClientIp string `json:"client_ip"`
+
+	UserId   uuid.UUID `json:"user_id"`
+	AppId    uuid.UUID `json:"app_id"`
+	TenantId uuid.UUID `json:"tenant_id"`
+}
+
+// ParseUserContextMeta 解析用户上下文元信息
+func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
+	var ust, ast, tst string
+
+	raw.Lang, err = ParseMetaKey(md, "lang")
+	if err != nil {
+		return nil, err
+	}
+	raw.Session, err = ParseMetaKey(md, "session")
+	if err != nil {
+		return nil, err
+	}
+	raw.ClientIp, err = ParseMetaKey(md, "client-ip")
+	if err != nil {
+		return nil, err
+	}
+
+	ust, err = ParseMetaKey(md, "user-id")
+	if err != nil {
+		return nil, err
+	}
+	ast, err = ParseMetaKey(md, "app-id")
+	if err != nil {
+		return nil, err
+	}
+	tst, err = ParseMetaKey(md, "tenant-id")
+	if err != nil {
+		return nil, err
+	}
+
+	raw.UserId, err = uuid.Parse(ust)
+	if err != nil {
+		return nil, errors.New("parse user_id error")
+	}
+
+	raw.AppId, err = uuid.Parse(ast)
+	if err != nil {
+		return nil, errors.New("parse app_id error")
+	}
+
+	raw.TenantId, err = uuid.Parse(tst)
+	if err != nil {
+		return nil, errors.New("parse tenant_id error")
+	}
+
+	return raw, nil
+}
+
 // ParseMetaKey 解析元信息key
-func ParseMetaKey(md *metadata.MD, key string) (string, error) {
+func ParseMetaKey(md metadata.MD, key string) (string, error) {
 	val := md.Get(key)
 
 	if len(val) == 0 {
