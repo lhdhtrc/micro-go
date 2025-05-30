@@ -16,7 +16,6 @@ type Meta struct {
 
 // UserContextMeta 用户上下文元信息
 type UserContextMeta struct {
-	Lang     string `json:"lang"`
 	Session  string `json:"session"`
 	ClientIp string `json:"client_ip"`
 
@@ -25,14 +24,27 @@ type UserContextMeta struct {
 	TenantId uuid.UUID `json:"tenant_id"`
 }
 
+type ClientContextMeta struct {
+	Lang       string `json:"lang"`
+	ClientIp   string `json:"client_ip"`
+	AppVersion string `json:"app_version"`
+}
+
+// ParseMetaKey 解析元信息key
+func ParseMetaKey(md metadata.MD, key string) (string, error) {
+	val := md.Get(key)
+
+	if len(val) == 0 {
+		return "", errors.New(fmt.Sprintf("%s parse error", key))
+	}
+
+	return val[0], nil
+}
+
 // ParseUserContextMeta 解析用户上下文元信息
 func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 	var ust, ast, tst string
 
-	raw.Lang, err = ParseMetaKey(md, "lang")
-	if err != nil {
-		return nil, err
-	}
 	raw.Session, err = ParseMetaKey(md, "session")
 	if err != nil {
 		return nil, err
@@ -73,13 +85,20 @@ func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 	return raw, nil
 }
 
-// ParseMetaKey 解析元信息key
-func ParseMetaKey(md metadata.MD, key string) (string, error) {
-	val := md.Get(key)
-
-	if len(val) == 0 {
-		return "", errors.New(fmt.Sprintf("%s parse error", key))
+// ParseClientContextMeta 解析客户端上下文元信息
+func ParseClientContextMeta(md metadata.MD) (raw *ClientContextMeta, err error) {
+	raw.Lang, err = ParseMetaKey(md, "lang")
+	if err != nil {
+		return nil, err
+	}
+	raw.ClientIp, err = ParseMetaKey(md, "client-ip")
+	if err != nil {
+		return nil, err
+	}
+	raw.AppVersion, err = ParseMetaKey(md, "app-version")
+	if err != nil {
+		return nil, err
 	}
 
-	return val[0], nil
+	return raw, nil
 }
