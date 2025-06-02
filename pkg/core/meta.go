@@ -45,6 +45,7 @@ func ParseMetaKey(md metadata.MD, key string) (string, error) {
 func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 	var ust, ast, tst string
 
+	raw = &UserContextMeta{}
 	raw.Session, err = ParseMetaKey(md, "session")
 	if err != nil {
 		return nil, err
@@ -87,6 +88,7 @@ func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 
 // ParseClientContextMeta 解析客户端上下文元信息
 func ParseClientContextMeta(md metadata.MD) (raw *ClientContextMeta, err error) {
+	raw = &ClientContextMeta{}
 	raw.Lang, err = ParseMetaKey(md, "lang")
 	if err != nil {
 		return nil, err
