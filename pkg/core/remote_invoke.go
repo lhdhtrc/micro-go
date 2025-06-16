@@ -1,7 +1,6 @@
 package micro
 
 import (
-	"context"
 	"errors"
 )
 
@@ -12,9 +11,9 @@ type InvokeResponse struct {
 }
 
 // WithRemoteInvoke 远程调用
-func WithRemoteInvoke[T any](ctx context.Context, invoke func(context.Context) (T, *InvokeResponse, error)) (T, error) {
+func WithRemoteInvoke[T any](callFunc func() (T, *InvokeResponse, error)) (T, error) {
 	// 执行服务调用
-	data, res, err := invoke(ctx)
+	data, res, err := callFunc()
 	if err != nil {
 		return data, err
 	}
