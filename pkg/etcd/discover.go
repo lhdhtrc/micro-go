@@ -3,16 +3,19 @@ package etcd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/lhdhtrc/func-go/array"
 	micro "github.com/lhdhtrc/micro-go/pkg/core"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-func NewDiscover(client *clientv3.Client, config *micro.ServiceConf) (*DiscoverInstance, error) {
+func NewDiscover(client *clientv3.Client, meta *micro.Meta, config *micro.ServiceConf) (*DiscoverInstance, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instance := &DiscoverInstance{
-		ctx:     ctx,
+		ctx:  ctx,
+		meta: meta,
+
 		cancel:  cancel,
 		client:  client,
 		config:  config,
@@ -25,6 +28,7 @@ func NewDiscover(client *clientv3.Client, config *micro.ServiceConf) (*DiscoverI
 }
 
 type DiscoverInstance struct {
+	meta   *micro.Meta
 	config *micro.ServiceConf
 	client *clientv3.Client
 
@@ -48,7 +52,7 @@ func (s *DiscoverInstance) GetService(sm string) ([]*micro.ServiceNode, error) {
 
 // Watcher 服务发现
 func (s *DiscoverInstance) Watcher() {
-	wc := s.client.Watch(s.ctx, s.config.Namespace, clientv3.WithPrefix(), clientv3.WithPrevKV())
+	wc := s.client.Watch(s.ctx, fmt.Sprintf("/%s/%s", s.config.Namespace, s.meta.Env), clientv3.WithPrefix(), clientv3.WithPrevKV())
 	for v := range wc {
 		for _, e := range v.Events {
 			s.adapter(e)

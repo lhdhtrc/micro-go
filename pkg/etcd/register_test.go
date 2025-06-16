@@ -34,13 +34,15 @@ func TestRegister(t *testing.T) {
 
 	// 创建一个服务节点
 	service := &micro.ServiceNode{
-		Meta: &micro.ServiceMeta{
-			AppId: "test-service",
+		Meta: &micro.Meta{
+			AppId:   "test-service",
+			Env:     "prod",
+			Version: "v0.0.1",
 		},
 	}
 
 	// 初始化注册实例
-	reg, err := NewRegister(cli, &micro.ServiceMeta{}, config)
+	reg, err := NewRegister(cli, &micro.Meta{}, config)
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -31,7 +31,11 @@ func TestDiscover(t *testing.T) {
 	}
 
 	// 初始服务发现实例
-	dis, err := NewDiscover(cli, config)
+	dis, err := NewDiscover(cli, &micro.Meta{
+		AppId:   "test-service",
+		Env:     "prod",
+		Version: "v0.0.1",
+	}, config)
 	if err != nil {
 		fmt.Println(err)
 		return

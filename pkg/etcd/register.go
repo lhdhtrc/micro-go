@@ -54,7 +54,7 @@ func (s *RegisterInstance) Install(service *micro.ServiceNode) error {
 
 	val, _ := json.Marshal(service)
 
-	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%d", s.config.Namespace, service.Meta.AppId, s.lease), string(val), clientv3.WithLease(s.lease))
+	_, err := s.client.Put(ctx, fmt.Sprintf("%s/%s/%s/%d", s.config.Namespace, s.meta.Env, service.Meta.AppId, s.lease), string(val), clientv3.WithLease(s.lease))
 	return err
 }
 func (s *RegisterInstance) Uninstall() {
