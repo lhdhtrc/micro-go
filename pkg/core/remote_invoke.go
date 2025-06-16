@@ -5,9 +5,9 @@ import (
 )
 
 // WithRemoteInvoke 远程调用
-func WithRemoteInvoke[T any](callFunc func() (data T, code uint32, message string, err error)) (T, error) {
+func WithRemoteInvoke[T any](callFunc func() (code uint32, message string, data T, err error)) (T, error) {
 	// 执行服务调用
-	data, code, message, err := callFunc()
+	code, message, data, err := callFunc()
 	if err != nil {
 		return data, err
 	}
