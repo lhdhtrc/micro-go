@@ -2,6 +2,7 @@ package micro
 
 import (
 	"errors"
+	"reflect"
 )
 
 // RemoteResponse 定义远程调用响应的标准接口
@@ -24,7 +25,8 @@ func WithRemoteInvoke[T any, R RemoteResponse[T]](callFunc func() (R, error)) (T
 	}
 
 	// 2. 检查响应对象是否有效
-	if resp == nil {
+	respValue := reflect.ValueOf(resp)
+	if respValue.Kind() == reflect.Ptr && respValue.IsNil() {
 		return zero, errors.New("remote response is nil")
 	}
 
