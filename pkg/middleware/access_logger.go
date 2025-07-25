@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	micro "github.com/lhdhtrc/micro-go/pkg/core"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"strconv"
 	"time"
 )
 
@@ -37,71 +39,43 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 			response, _ := json.Marshal(resp)
 			loggerMap["response"] = string(response)
 
-			loggerMap["duration"] = elapsed.Nanoseconds()
+			loggerMap["duration"] = elapsed.String()
 			loggerMap["status"] = 200
 
-			ip := md.Get("client-ip")
-			if len(ip) != 0 {
-				loggerMap["ip"] = ip[0]
-			}
+			loggerMap["ip"], err = micro.ParseMetaKey(md, "client-ip")
 
-			systemType := md.Get("system-type")
-			if len(systemType) != 0 {
-				loggerMap["system_type"] = systemType[0]
-			} else {
+			loggerMap["system_name"], _ = micro.ParseMetaKey(md, "system-name")
+			loggerMap["client_name"], _ = micro.ParseMetaKey(md, "client-name")
+
+			var systemType, clientType, deviceFormFactor string
+			systemType, err = micro.ParseMetaKey(md, "system-type")
+			if err == nil {
 				loggerMap["system_type"] = 0
-			}
-
-			systemName := md.Get("system-name")
-			if len(systemName) != 0 {
-				loggerMap["system_name"] = systemName[0]
-			}
-
-			systemVersion := md.Get("system-version")
-			if len(systemVersion) != 0 {
-				loggerMap["system_version"] = systemVersion[0]
-			}
-
-			clientType := md.Get("client-type")
-			if len(clientType) != 0 {
-				loggerMap["client_type"] = clientType[0]
 			} else {
+				loggerMap["system_type"], _ = strconv.ParseInt(systemType, 10, 32)
+			}
+			clientType, err = micro.ParseMetaKey(md, "client-type")
+			if err == nil {
 				loggerMap["client_type"] = 0
+			} else {
+				loggerMap["client_type"], _ = strconv.ParseInt(clientType, 10, 32)
 			}
-
-			clientName := md.Get("client-name")
-			if len(clientName) != 0 {
-				loggerMap["client_name"] = clientName[0]
-			}
-
-			clientVersion := md.Get("client-version")
-			if len(clientVersion) != 0 {
-				loggerMap["client_version"] = clientVersion[0]
-			}
-
-			appId := md.Get("app-id")
-			if len(appId) != 0 {
-				loggerMap["app_id"] = appId[0]
-			}
-
-			appVersion := md.Get("app-version")
-			if len(appVersion) != 0 {
-				loggerMap["app_version"] = appVersion[0]
-			}
-
-			deviceFormFactor := md.Get("device-form-factor")
-			if len(deviceFormFactor) != 0 {
-				loggerMap["device_form_factor"] = deviceFormFactor[0]
+			deviceFormFactor, err = micro.ParseMetaKey(md, "device-form-factor")
+			if err == nil {
+				loggerMap["device_form_factor"] = deviceFormFactor
 			} else {
 				loggerMap["device_form_factor"] = 0
 			}
 
-			traceId := md.Get("trace-id")
-			if len(traceId) != 0 {
-				loggerMap["trace_id"] = traceId[0]
-			} else {
+			loggerMap["system_version"], _ = micro.ParseMetaKey(md, "system-version")
+			loggerMap["client_version"], _ = micro.ParseMetaKey(md, "client-version")
+			loggerMap["app_version"], _ = micro.ParseMetaKey(md, "app-version")
+
+			loggerMap["trace_id"], err = micro.ParseMetaKey(md, "trace-id")
+			if err != nil {
 				loggerMap["trace_id"] = uuid.New().String()
 			}
+			loggerMap["app_id"], _ = micro.ParseMetaKey(md, "app-id")
 
 			b, _ := json.Marshal(loggerMap)
 			handle(b, fmt.Sprintf("[%s] [GRPC]:[%s] [%s]-[%d]\n", time.Now().Format(time.DateTime), info.FullMethod, elapsed.String(), status))
