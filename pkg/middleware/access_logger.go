@@ -37,10 +37,10 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 			response, _ := json.Marshal(resp)
 			loggerMap["response"] = string(response)
 
-			loggerMap["duration"] = elapsed.Milliseconds()
+			loggerMap["duration"] = elapsed.Nanoseconds()
 			loggerMap["status"] = 200
 
-			ip := md.Get("x-real-ip")
+			ip := md.Get("client-ip")
 			if len(ip) != 0 {
 				loggerMap["ip"] = ip[0]
 			}
