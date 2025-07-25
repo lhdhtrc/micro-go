@@ -48,6 +48,8 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 			systemType := md.Get("system-type")
 			if len(systemType) != 0 {
 				loggerMap["system_type"] = systemType[0]
+			} else {
+				loggerMap["system_type"] = 0
 			}
 
 			systemName := md.Get("system-name")
@@ -63,6 +65,8 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 			clientType := md.Get("client-type")
 			if len(clientType) != 0 {
 				loggerMap["client_type"] = clientType[0]
+			} else {
+				loggerMap["client_type"] = 0
 			}
 
 			clientName := md.Get("client-name")
@@ -88,6 +92,8 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 			deviceFormFactor := md.Get("device-form-factor")
 			if len(deviceFormFactor) != 0 {
 				loggerMap["device_form_factor"] = deviceFormFactor[0]
+			} else {
+				loggerMap["device_form_factor"] = 0
 			}
 
 			traceId := md.Get("trace-id")
