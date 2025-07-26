@@ -75,6 +75,7 @@ func GrpcAccessLogger(handle func(b []byte, msg string)) grpc.UnaryServerInterce
 				traceId = uuid.New().String()
 			}
 			loggerMap["trace_id"] = traceId
+			loggerMap["user_id"], _ = micro.ParseMetaKey(md, "user-id")
 			loggerMap["app_id"], _ = micro.ParseMetaKey(md, "app-id")
 
 			b, _ := json.Marshal(loggerMap)
