@@ -3,7 +3,6 @@ package micro
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -19,9 +18,11 @@ type UserContextMeta struct {
 	Session  string `json:"session"`
 	ClientIp string `json:"client_ip"`
 
-	UserId   uuid.UUID `json:"user_id"`
-	AppId    uuid.UUID `json:"app_id"`
-	TenantId uuid.UUID `json:"tenant_id"`
+	UserId   string `json:"user_id"`
+	DeptId   string `json:"dept_id"`
+	OrgId    string `json:"org_id"`
+	AppId    string `json:"app_id"`
+	TenantId string `json:"tenant_id"`
 }
 
 type ClientContextMeta struct {
@@ -43,8 +44,6 @@ func ParseMetaKey(md metadata.MD, key string) (string, error) {
 
 // ParseUserContextMeta 解析用户上下文元信息
 func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
-	var ust, ast, tst string
-
 	raw = &UserContextMeta{}
 	raw.Session, err = ParseMetaKey(md, "session")
 	if err != nil {
@@ -55,32 +54,25 @@ func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 		return nil, err
 	}
 
-	ust, err = ParseMetaKey(md, "user-id")
+	raw.UserId, err = ParseMetaKey(md, "user-id")
 	if err != nil {
 		return nil, err
 	}
-	ast, err = ParseMetaKey(md, "app-id")
+	raw.DeptId, err = ParseMetaKey(md, "dept-id")
 	if err != nil {
 		return nil, err
 	}
-	tst, err = ParseMetaKey(md, "tenant-id")
+	raw.OrgId, err = ParseMetaKey(md, "org-id")
 	if err != nil {
 		return nil, err
 	}
-
-	raw.UserId, err = uuid.Parse(ust)
+	raw.AppId, err = ParseMetaKey(md, "app-id")
 	if err != nil {
-		return nil, errors.New("parse user_id error")
+		return nil, err
 	}
-
-	raw.AppId, err = uuid.Parse(ast)
+	raw.TenantId, err = ParseMetaKey(md, "tenant-id")
 	if err != nil {
-		return nil, errors.New("parse app_id error")
-	}
-
-	raw.TenantId, err = uuid.Parse(tst)
-	if err != nil {
-		return nil, errors.New("parse tenant_id error")
+		return nil, err
 	}
 
 	return raw, nil
