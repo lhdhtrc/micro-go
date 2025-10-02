@@ -167,13 +167,66 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 
 	// 根据事件类型进行相应处理
 	switch e.Type {
-	// PUT，新增或替换
-	case clientv3.EventTypePut:
-		s.service[key] = append(s.service[key], &val)
-	// DELETE
-	case clientv3.EventTypeDelete:
-		s.service[key] = array.Filter(s.service[key], func(index int, item *micro.ServiceNode) bool {
-			return item.LeaseId != val.LeaseId
-		})
+	case clientv3.EventTypePut: // 新增或更新服务节点
+		s.handlePutEvent(val.Meta.AppId, &val)
+	case clientv3.EventTypeDelete: // 删除服务节点
+		s.handleDeleteEvent(val.Meta.AppId, &val)
+	}
+}
+
+// handlePutEvent 处理服务注册/更新事件
+// 当有新的服务注册或现有服务更新时调用
+// Lease ID 在 etcd 中是全局唯一的，即使同时启动多个相同服务也不会重复
+// 参数:
+//   - appId: 应用ID
+//   - newNode: 新的服务节点信息
+func (s *DiscoverInstance) handlePutEvent(appId string, newNode *micro.ServiceNode) {
+	// 先移除可能存在的相同Lease ID的旧节点
+	// 由于Lease ID全局唯一，这确保了节点的唯一性
+	s.service[appId] = array.Filter(s.service[appId], func(index int, item *micro.ServiceNode) bool {
+		return item.LeaseId != newNode.LeaseId
+	})
+
+	// 将新节点插入到切片开头，使其具有更高优先级（最近注册的服务优先）
+	s.service[appId] = append([]*micro.ServiceNode{newNode}, s.service[appId]...)
+
+	// 记录服务更新日志
+	if s.log != nil {
+		s.log(micro.Info, fmt.Sprintf("Service updated: %s, leaseId: %d, nodes count: %d",
+			appId, newNode.LeaseId, len(s.service[appId])))
+	}
+}
+
+// handleDeleteEvent 处理服务删除事件
+// 当服务节点下线或被删除时调用
+// 基于全局唯一的Lease ID来精确删除对应节点
+// 参数:
+//   - appId: 应用ID
+//   - removedNode: 要移除的服务节点信息
+func (s *DiscoverInstance) handleDeleteEvent(appId string, removedNode *micro.ServiceNode) {
+	// 记录删除前的节点数量
+	originalCount := len(s.service[appId])
+
+	// 基于Lease ID过滤掉要删除的节点
+	// Lease ID全局唯一，确保精确删除
+	s.service[appId] = array.Filter(s.service[appId], func(index int, item *micro.ServiceNode) bool {
+		return item.LeaseId != removedNode.LeaseId
+	})
+
+	// 记录服务删除日志
+	if s.log != nil {
+		remainingCount := len(s.service[appId])
+		if originalCount != remainingCount {
+			s.log(micro.Info, fmt.Sprintf("Service removed: %s, leaseId: %d, nodes count: %d -> %d",
+				appId, removedNode.LeaseId, originalCount, remainingCount))
+		}
+	}
+
+	// 如果该服务没有节点了，清理空数组以避免内存泄漏
+	if len(s.service[appId]) == 0 {
+		delete(s.service, appId)
+		if s.log != nil {
+			s.log(micro.Info, fmt.Sprintf("Service %s has no nodes, removed from discovery", appId))
+		}
 	}
 }
