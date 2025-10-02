@@ -137,6 +137,9 @@ func (s *DiscoverInstance) bootstrap() error {
 }
 
 // adapter 服务发现适配器
+// 将etcd的原始事件转换为服务发现内部事件
+// 参数:
+//   - e: etcd事件，包含事件类型和键值信息
 func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 	var (
 		tv []byte
