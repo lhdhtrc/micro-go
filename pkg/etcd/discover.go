@@ -117,9 +117,14 @@ func (s *DiscoverInstance) bootstrap() error {
 	// 遍历所有获取到的键值对
 	for _, item := range res.Kvs {
 		var val micro.ServiceNode
+		// 反序列化服务节点信息
 		if err = json.Unmarshal(item.Value, &val); err == nil {
-			s.service[val.Meta.AppId] = append(s.service[val.Meta.AppId], &val)
+			// 解析服务方法映射
 			val.ParseMethod(s.methods)
+			appId := val.Meta.AppId
+
+			// 由于Lease ID全局唯一，直接添加即可
+			s.service[appId] = append(s.service[appId], &val)
 		}
 	}
 
