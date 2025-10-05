@@ -72,15 +72,15 @@ func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 
 	raw.UserId, err = uuid.Parse(ust)
 	if err != nil {
-		return nil, errors.New("parse user_id error")
+		return nil, errors.New("parse user-id uuid error")
 	}
 	raw.AppId, err = uuid.Parse(ast)
 	if err != nil {
-		return nil, errors.New("parse app_id error")
+		return nil, errors.New("parse app-id uuid error")
 	}
 	raw.TenantId, err = uuid.Parse(tst)
 	if err != nil {
-		return nil, errors.New("parse tenant_id error")
+		return nil, errors.New("parse tenant-id uuid error")
 	}
 
 	return raw, nil
