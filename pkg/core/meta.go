@@ -19,8 +19,10 @@ type UserContextMeta struct {
 	Session  string `json:"session"`
 	ClientIp string `json:"client_ip"`
 
-	UserId   uuid.UUID `json:"user_id"`
-	DeptId   uuid.UUID `json:"dept_id"`
+	Roles []string `json:"roles"`
+
+	UserId uuid.UUID `json:"user_id"`
+
 	OrgId    uuid.UUID `json:"org_id"`
 	AppId    uuid.UUID `json:"app_id"`
 	TenantId uuid.UUID `json:"tenant_id"`
@@ -48,6 +50,7 @@ func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 	var ust, ast, tst string
 
 	raw = &UserContextMeta{}
+
 	raw.Session, err = ParseMetaKey(md, "session")
 	if err != nil {
 		return nil, err
@@ -56,6 +59,8 @@ func ParseUserContextMeta(md metadata.MD) (raw *UserContextMeta, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	raw.Roles = md.Get("roles")
 
 	ust, err = ParseMetaKey(md, "user-id")
 	if err != nil {
