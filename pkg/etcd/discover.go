@@ -210,8 +210,7 @@ func (s *DiscoverInstance) handleDeleteEvent(appId string, removedNode *micro.Se
 	if s.log != nil {
 		remainingCount := len(s.service[appId])
 		if originalCount != remainingCount {
-			s.log(micro.Info, fmt.Sprintf("Service removed: %s, leaseId: %d, nodes count: %d -> %d",
-				appId, removedNode.LeaseId, originalCount, remainingCount))
+			s.log(micro.Info, fmt.Sprintf("Service removed: %s, leaseId: %d, nodes count: %d -> %d", appId, removedNode.LeaseId, originalCount, remainingCount))
 		}
 	}
 
