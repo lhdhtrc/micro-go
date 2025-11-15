@@ -181,19 +181,12 @@ func (s *DiscoverInstance) adapter(e *clientv3.Event) {
 //   - appId: 应用ID
 //   - newNode: 新的服务节点信息
 func (s *DiscoverInstance) handlePutEvent(appId string, newNode *micro.ServiceNode) {
-	// 先移除可能存在的相同Lease ID的旧节点
-	// 由于Lease ID全局唯一，这确保了节点的唯一性
-	s.service[appId] = array.Filter(s.service[appId], func(index int, item *micro.ServiceNode) bool {
-		return item.LeaseId != newNode.LeaseId
-	})
-
 	// 将新节点插入到切片开头，使其具有更高优先级（最近注册的服务优先）
 	s.service[appId] = append([]*micro.ServiceNode{newNode}, s.service[appId]...)
 
 	// 记录服务更新日志
 	if s.log != nil {
-		s.log(micro.Info, fmt.Sprintf("Service updated: %s, leaseId: %d, nodes count: %d",
-			appId, newNode.LeaseId, len(s.service[appId])))
+		s.log(micro.Info, fmt.Sprintf("Service updated: %s, leaseId: %d, nodes count: %d", appId, newNode.LeaseId, len(s.service[appId])))
 	}
 }
 
