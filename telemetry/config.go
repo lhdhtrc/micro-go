@@ -19,6 +19,8 @@ type Config struct {
 type Resource struct {
 	// ServiceId 服务id
 	ServiceId string `json:"service_id"`
+	// Environment 服务运行环境，例如 dev、test、prod。
+	Environment string `json:"environment"`
 	// ServiceName 服务名称
 	ServiceName string `json:"service_name"`
 	// ServiceVersion 服务版本

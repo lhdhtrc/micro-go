@@ -43,17 +43,7 @@ func NewProviders(config *Config, source *Resource) (*Providers, error) {
 	p := &Providers{}
 
 	// 1. 创建 Resource
-	res, err := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName(source.ServiceName),
-			semconv.ServiceVersion(source.ServiceVersion),
-			semconv.ServiceNamespace(source.ServiceNamespace),
-			semconv.ServiceInstanceID(source.ServiceInstanceId),
-			attribute.String("service.id", source.ServiceId),
-		),
-	)
+	res, err := newResource(source)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +93,24 @@ func NewProviders(config *Config, source *Resource) (*Providers, error) {
 	}
 
 	return p, nil
+}
+
+// newResource 构造所有 OTel 信号共用的服务身份资源。
+func newResource(source *Resource) (*resource.Resource, error) {
+	attrs := []attribute.KeyValue{
+		semconv.ServiceName(source.ServiceName),
+		semconv.ServiceVersion(source.ServiceVersion),
+		semconv.ServiceNamespace(source.ServiceNamespace),
+		semconv.ServiceInstanceID(source.ServiceInstanceId),
+		attribute.String("service.id", source.ServiceId),
+	}
+	if source.Environment != "" {
+		attrs = append(attrs, attribute.String("deployment.environment", source.Environment))
+	}
+	return resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(semconv.SchemaURL, attrs...),
+	)
 }
 
 func (p *Providers) Shutdown() error {
