@@ -35,6 +35,7 @@ OTel 的通用工作模型是：
 ```go
 type Resource struct {
     ServiceId         string
+    Environment       string
     ServiceName       string
     ServiceVersion    string
     ServiceNamespace  string
@@ -54,12 +55,13 @@ resource.Merge(
     semconv.ServiceNamespace(source.ServiceNamespace),
     semconv.ServiceInstanceID(source.ServiceInstanceId),
     attribute.String("service.id", source.ServiceId),
+    attribute.String("deployment.environment", source.Environment),
   ),
 )
 ```
 
 这部分是所有信号的共同“身份标签”。`resource.Default()` 会保留 OTel 默认资源字段（如 `service.name` 默认值与 `telemetry.sdk.*`），并叠加服务标准语义字段（`service.name/service.version/service.namespace/service.instance.id`）和项目自定义字段（`service.id`）。
-字段语义建议为：`service.id` 表示服务父级标识（对应 `app_id`），`service.instance.id` 表示该服务下的具体实例；平台检索与聚合优先使用标准字段 `service.name/service.namespace/service.instance.id`，`service.id` 作为业务维度补充字段。
+字段语义建议为：`service.id` 表示服务父级标识（对应 `app_id`），`service.instance.id` 表示该服务下的具体实例，`deployment.environment` 表示服务运行环境；平台检索与聚合优先使用标准字段 `service.name/service.namespace/service.instance.id`，`service.id` 作为业务维度补充字段。
 
 ### 2.2 Propagator：跨进程传播 Trace 上下文
 
@@ -174,6 +176,7 @@ grpc.NewServer(
 ```go
 providers, err := telemetry.NewProviders(&conf.Telemetry, &telemetry.Resource{
   ServiceId:         conf.App.Id,
+  Environment:       conf.App.Env,
   ServiceName:       conf.Service.Service,
   ServiceVersion:    conf.App.Version,
   ServiceNamespace:  conf.Service.Namespace,
@@ -284,6 +287,7 @@ type BootstrapConfig struct {
 ```go
 source := &telemetry.Resource{
   ServiceId:         conf.App.Id,
+  Environment:       conf.App.Env,
   ServiceName:       conf.Service.Service,
   ServiceVersion:    conf.App.Version,
   ServiceNamespace:  conf.Service.Namespace,
