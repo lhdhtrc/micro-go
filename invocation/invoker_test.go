@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fireflycore/go-micro/constant"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -72,6 +73,56 @@ func TestUnaryInvoker_Invoke_ReusesIncomingMetadataAndInvokeFunc(t *testing.T) {
 	}
 	if !invoked {
 		t.Fatalf("expected invoke func to be called")
+	}
+}
+
+func TestUnaryInvoker_Invoke_PreservesTraceMetadataAndSpanContext(t *testing.T) {
+	traceID := trace.TraceID{0x4b, 0xf9, 0x2f, 0x35, 0x77, 0xb3, 0x4d, 0xa6, 0xa3, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36}
+	spanID := trace.SpanID{0x00, 0xf0, 0x67, 0xaa, 0x0b, 0xa9, 0x02, 0xb7}
+	spanContext := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	})
+
+	invoker := &UnaryInvoker{
+		Dialer: testDialer{conn: &grpc.ClientConn{}},
+		InvokeFunc: func(ctx context.Context, conn *grpc.ClientConn, method string, req any, resp any, options ...grpc.CallOption) error {
+			md, ok := metadata.FromOutgoingContext(ctx)
+			if !ok {
+				t.Fatal("expected outgoing metadata")
+			}
+			if got := md.Get(constant.TraceParent); len(got) == 0 || got[0] != "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" {
+				t.Fatalf("expected traceparent to be preserved, got %v", got)
+			}
+			if got := md.Get(constant.TraceState); len(got) == 0 || got[0] != "vendor=value" {
+				t.Fatalf("expected tracestate to be preserved, got %v", got)
+			}
+			if got := md.Get(constant.Baggage); len(got) == 0 || got[0] != "tenant=demo" {
+				t.Fatalf("expected baggage to be preserved, got %v", got)
+			}
+			if got := trace.SpanContextFromContext(ctx); !got.IsValid() || got.TraceID() != traceID {
+				t.Fatalf("expected span context to remain on outgoing ctx, got %v", got)
+			}
+			return nil
+		},
+	}
+
+	ctx := trace.ContextWithSpanContext(context.Background(), spanContext)
+	ctx = metadata.NewIncomingContext(ctx, metadata.Pairs(
+		constant.TraceParent, "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+		constant.TraceState, "vendor=value",
+		constant.Baggage, "tenant=demo",
+		constant.UserAuthority, "user-token",
+	))
+
+	err := invoker.Invoke(ctx, &DNS{
+		Service:   "secure",
+		Namespace: "lhdht",
+	}, "/acme.secure.code.verify.graphic.v1.SecureGraphicVerifyCodeService/Validate", struct{}{}, &struct{}{})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
 	}
 }
 
