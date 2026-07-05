@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	promreg "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -22,6 +23,10 @@ import (
 func NewMeterProvider(res *resource.Resource) (*sdkmetric.MeterProvider, http.Handler, error) {
 	// 创建一个新的 Prometheus Registry，避免使用全局默认 Registry
 	reg := promreg.NewRegistry()
+	reg.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
 
 	// 创建 OTel Prometheus Exporter
 	metricExp, err := otelprom.New(
