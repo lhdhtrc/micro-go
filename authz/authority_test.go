@@ -2,7 +2,9 @@ package authz
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -94,6 +96,47 @@ func TestCachedServiceAuthorityProvider_StartFetchesTokenInBackground(t *testing
 	}
 }
 
+func TestCachedServiceAuthorityProvider_ServiceAuthorityStatusReportsLoadedToken(t *testing.T) {
+	provider, err := NewCachedServiceAuthorityProvider(CachedServiceAuthorityProviderOptions{
+		RefreshBefore: 30 * time.Second,
+		Fetch: func(context.Context) (*ServiceAuthorityToken, error) {
+			return &ServiceAuthorityToken{
+				Token:     "secret-service-token",
+				ExpiresAt: time.Now().Add(time.Hour),
+			}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("new provider failed: %v", err)
+	}
+	defer provider.Stop()
+
+	if err := provider.Start(context.Background()); err != nil {
+		t.Fatalf("start provider failed: %v", err)
+	}
+	if _, err := waitForServiceAuthority(t, provider); err != nil {
+		t.Fatalf("service authority did not load: %v", err)
+	}
+
+	status := provider.ServiceAuthorityStatus()
+	if !status.Started || !status.Loaded {
+		t.Fatalf("expected started and loaded status, got %+v", status)
+	}
+	if status.RefreshBefore != "30s" {
+		t.Fatalf("unexpected refresh_before: %q", status.RefreshBefore)
+	}
+	if status.ExpiresAt == nil || status.ExpiresInSeconds <= 0 {
+		t.Fatalf("expected future expires_at, got %+v", status)
+	}
+	body, err := json.Marshal(status)
+	if err != nil {
+		t.Fatalf("marshal status failed: %v", err)
+	}
+	if strings.Contains(string(body), "secret-service-token") {
+		t.Fatalf("status leaked service token: %s", body)
+	}
+}
+
 func TestCachedServiceAuthorityProvider_RetriesUntilSuccess(t *testing.T) {
 	var fetchCount int32
 	provider, err := NewCachedServiceAuthorityProvider(CachedServiceAuthorityProviderOptions{
@@ -125,6 +168,29 @@ func TestCachedServiceAuthorityProvider_RetriesUntilSuccess(t *testing.T) {
 	}
 	if gotFetchCount := atomic.LoadInt32(&fetchCount); token != "service-token" || gotFetchCount < 3 {
 		t.Fatalf("expected retry success, token=%q fetch=%d", token, gotFetchCount)
+	}
+}
+
+func TestCachedServiceAuthorityProvider_ServiceAuthorityStatusReportsRefreshError(t *testing.T) {
+	provider, err := NewCachedServiceAuthorityProvider(CachedServiceAuthorityProviderOptions{
+		Fetch: func(context.Context) (*ServiceAuthorityToken, error) {
+			return nil, errors.New("auth unavailable")
+		},
+	})
+	if err != nil {
+		t.Fatalf("new provider failed: %v", err)
+	}
+
+	if refreshed := provider.refreshOnce(context.Background()); refreshed {
+		t.Fatalf("expected failed refresh")
+	}
+
+	status := provider.ServiceAuthorityStatus()
+	if status.Loaded {
+		t.Fatalf("expected unloaded status, got %+v", status)
+	}
+	if !strings.Contains(status.LastError, "auth unavailable") {
+		t.Fatalf("expected last error, got %+v", status)
 	}
 }
 

@@ -50,15 +50,41 @@ type ServiceAuthorityToken struct {
 // ServiceAuthorityFetchFunc 表示业务服务如何从 auth 服务获取 service token。
 type ServiceAuthorityFetchFunc func(ctx context.Context) (*ServiceAuthorityToken, error)
 
+// ServiceAuthorityStatus 是 service token 管理器的安全排障快照。
+//
+// 该结构只描述 token 是否已经装载、何时过期以及最近刷新错误，
+// 绝不包含 X-Firefly-Service-Authority 的 token 原文。
+type ServiceAuthorityStatus struct {
+	// Started 表示后台刷新协程是否已经启动。
+	Started bool `json:"started"`
+	// Loaded 表示当前缓存中存在尚未过期的 service token。
+	Loaded bool `json:"loaded"`
+	// ExpiresAt 是当前缓存 token 的过期时间；没有可用过期时间时为空。
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	// ExpiresInSeconds 表示距离 ExpiresAt 的秒数；过期 token 会显示负数。
+	ExpiresInSeconds int64 `json:"expires_in_seconds"`
+	// RefreshBefore 表示当前配置的过期前主动刷新窗口。
+	RefreshBefore string `json:"refresh_before"`
+	// LastError 是最近一次后台刷新错误；刷新成功后会清空。
+	LastError string `json:"last_error,omitempty"`
+}
+
 // ServiceAuthorityProvider 表示出站调用在热路径上获取当前服务 token 的能力。
 type ServiceAuthorityProvider interface {
 	// ServiceAuthority 返回当前这一跳调用方服务身份 token。
 	ServiceAuthority(ctx context.Context) (string, error)
 }
 
+// ServiceAuthorityStatusProvider 表示读取 service token 管理器安全状态快照的能力。
+type ServiceAuthorityStatusProvider interface {
+	// ServiceAuthorityStatus 返回当前 service token 管理器的安全排障快照。
+	ServiceAuthorityStatus() ServiceAuthorityStatus
+}
+
 // ServiceAuthorityManager 表示具备后台获取和刷新能力的 service authority provider。
 type ServiceAuthorityManager interface {
 	ServiceAuthorityProvider
+	ServiceAuthorityStatusProvider
 	// Start 启动后台刷新协程；调用后会立即异步 fetch 一次 service token。
 	Start(ctx context.Context) error
 	// Stop 停止后台刷新协程；不会撤销 auth 服务已经签发的 service token。
@@ -178,6 +204,43 @@ func (p *CachedServiceAuthorityProvider) ServiceAuthority(ctx context.Context) (
 	}
 	// 理论上 currentToken 会在不可用时返回错误，这里保留兜底语义。
 	return "", ErrServiceTokenUnavailable
+}
+
+// ServiceAuthorityStatus 返回当前 service token 管理器的安全排障快照。
+func (p *CachedServiceAuthorityProvider) ServiceAuthorityStatus() ServiceAuthorityStatus {
+	if p == nil {
+		return ServiceAuthorityStatus{
+			Loaded:    false,
+			LastError: ErrServiceAuthorityFetchMissing.Error(),
+		}
+	}
+
+	p.lifecycleMu.Lock()
+	started := p.lifecycleCancel != nil
+	p.lifecycleMu.Unlock()
+
+	now := time.Now().UTC()
+	p.mu.RLock()
+	token := strings.TrimSpace(p.token)
+	expiresAt := p.expiresAt
+	refreshBefore := p.refreshBefore
+	lastRefreshErr := p.lastRefreshErr
+	p.mu.RUnlock()
+
+	status := ServiceAuthorityStatus{
+		Started:       started,
+		Loaded:        token != "" && !expiresAt.IsZero() && expiresAt.After(now),
+		RefreshBefore: refreshBefore.String(),
+	}
+	if !expiresAt.IsZero() {
+		expiresAtUTC := expiresAt.UTC()
+		status.ExpiresAt = &expiresAtUTC
+		status.ExpiresInSeconds = int64(expiresAtUTC.Sub(now).Seconds())
+	}
+	if lastRefreshErr != nil {
+		status.LastError = lastRefreshErr.Error()
+	}
+	return status
 }
 
 // Start 启动后台刷新协程，并立即异步获取一次 service token。
