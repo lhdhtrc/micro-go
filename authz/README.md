@@ -97,4 +97,6 @@ invoker := invocation.NewUnaryInvoker(manager, timeout).
 
 `ServiceAuthorityProvider` 会在进程内缓存 service token，并在后台按 `RefreshBefore` 主动刷新。首次 fetch 会在 `Start(ctx)` 后立即异步执行；失败后按 `min(1 minute * retry_count * 10, 60 minutes)` 退避并无限次重试，成功后清零。没有有效 service token 时，出站 Firefly 服务调用返回 `ErrServiceTokenUnavailable`，不会只携带用户 token 穿透下游。
 
+管理端或排障接口可通过 `ServiceAuthorityStatus()` 读取安全状态快照。该快照只包含 `started`、`loaded`、`expires_at`、`expires_in_seconds`、`refresh_before` 和 `last_error`，不包含 service token 原文，适合挂到业务服务 `/info` 这类自管理接口。
+
 出站 metadata 采用白名单策略，保留用户 authority、短 TTL `x-firefly-authz-sign`、OTel trace/baggage 和访问日志需要的客户端事实；普通身份 metadata、当前服务自身 metadata、上一跳 service authority 以及未知业务 metadata 会被清理。下一跳 authz 可以验签复用身份解析结果，但仍必须基于当前 route 重新做权限判定并重新签发新的 `x-firefly-authz-sign`。
