@@ -12,11 +12,12 @@
 - `AppLanguage` / `AppVersion`：客户端应用上下文。
 - `ServiceAppId` / `ServiceInstanceId`：当前业务服务自身身份字段，只在服务入口注入本地上下文，用于日志、OTel 和数据库链路排障；它们不是 authz 权限元组字段，也不允许出站透传。
 - `Session`、`UserId` / `AppId` / `TenantId` / `OrgIds` / `PostIds` / `RoleIds`：authz 解析用户 authority 后注入的普通身份 metadata key，其中 `AppId` 只表示用户身份中的 app_id。
-- `SubjectType` / `InvokeAppId` / `TargetAppId` / `ApiMethod` / `ApiPath` / `DecisionId`：authz allow 后写回的普通上下文字段，便于业务日志和排障读取；服务权限粒度当前固定到 app_id，不再注入 invoke/target instance 字段。
+- `SubjectType` / `InvokeAppId` / `TargetAppId` / `RouteMethod` / `RoutePath` / `TargetMethod` / `TargetPath` / `DecisionId`：authz allow 后写回的普通上下文字段，便于业务日志和排障读取；服务权限粒度当前固定到 app_id，不再注入 invoke/target instance 字段。
 - `AuthzSign`：`x-firefly-authz-sign` metadata key，对应 authz 写回的短有效期 compact JWS；可信上下文只从验签后的 JWS payload 读取。
 - `RequestMethod*` / `RequestMethod*String`：访问日志和权限资源动作共用的 HTTP/gRPC method 枚举。
 - `SubjectTypeAnonymous` / `SubjectTypeUser` / `SubjectTypeService`：authz JWS payload 和服务内上下文共用的主体类型。
-- `JWSAlgorithmEdDSA` / `JWSTypeJWT`：服务侧验签 Firefly JWS 时使用的公共 JOSE 字段值。
+- `JWSAlgorithmEdDSA` / `JWSTypeJWT` / `AuthzSignDefault*` / `AuthzSignDecisionAllow` / `AuthzSignClaim*`：服务侧验签和 authz 签发 `x-firefly-authz-sign` 时使用的公共 JOSE / claim 字段值。
+- `ExtAuthzContext*`：api-gateway / sidecar-agent 写入 Envoy `ext_authz context_extensions`、authz 读取 route 事实时共用的 key；新链路使用 `route_method` / `route_path` 与 `target_method` / `target_path` 成对表达命中的 route 授权事实和后端目标。
 
 ## 已移除的旧字段
 
@@ -39,7 +40,7 @@
 
 `go-micro` 不再把 `x-request-id` 作为业务主 trace 头；链路追踪统一使用 `traceparent` / `tracestate` / `baggage`。
 
-`x-firefly-api-method` / `x-firefly-api-path` 是 authz allow 后注入的读取便利字段；业务服务需要可信数据时必须优先验签 `x-firefly-authz-sign`。
+`x-firefly-route-method` / `x-firefly-route-path` 是入口权限检查使用的读取便利字段；`x-firefly-target-method` / `x-firefly-target-path` 是后端服务侧验签绑定字段。业务服务需要可信数据时必须优先验签 `x-firefly-authz-sign`。
 
 `x-firefly-service-app-id` / `x-firefly-service-instance-id` 是当前服务自身的本地入口 metadata。它们可以被 gRPC 入口中间件写入当前请求上下文，供 gormx、日志或 OTel 相关组件读取；出站调用必须清理它们，不能把当前服务自身身份传播给下一跳。
 

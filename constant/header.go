@@ -95,8 +95,12 @@ const (
 )
 
 const (
-	// ApiMethod 表示当前授权检查使用的接口动作，例如 GET/POST/GRPC。
-	ApiMethod = HeaderPrefix + "api-method"
-	// ApiPath 表示当前授权检查使用的接口路径，HTTP 为 path，gRPC 为 FullMethod。
-	ApiPath = HeaderPrefix + "api-path"
+	// RouteMethod 表示当前授权检查命中的 route 动作，例如 GET/POST/GRPC。
+	RouteMethod = HeaderPrefix + "route-method"
+	// RoutePath 表示当前授权检查命中的 route 路径，HTTP 为 path，gRPC 为 FullMethod。
+	RoutePath = HeaderPrefix + "route-path"
+	// TargetMethod 表示授权结果最终投递到后端服务的目标动作。
+	TargetMethod = HeaderPrefix + "target-method"
+	// TargetPath 表示授权结果最终投递到后端服务的目标资源。
+	TargetPath = HeaderPrefix + "target-path"
 )
