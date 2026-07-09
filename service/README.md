@@ -42,4 +42,4 @@
 
 `service.Context.AuthzSignJWS` 保存原始 `x-firefly-authz-sign` compact JWS；`service.Context.VerifiedAuthzSign` 保存验签后的 payload。
 
-`service.Context.ApiMethod` / `ApiPath` 只在 `BuildVerifiedContext(...)` 本地验签成功后可信；普通 metadata 只作为读取便利，不是信任根。验签后的 `AuthzSign` 必须携带结构化 `user_context`，以及字符串字段 `invoke_service_app_id` / `target_service_app_id`，不再接受旧平铺身份 payload。
+`service.Context.RouteMethod` / `RoutePath` 只在 `BuildVerifiedContext(...)` 本地验签成功后可信；普通 metadata 只作为读取便利，不是信任根。验签后的 `AuthzSign` 必须携带结构化 `user_context`，以及字符串字段 `invoke_service_app_id` / `target_service_app_id`，不再接受旧平铺身份 payload。

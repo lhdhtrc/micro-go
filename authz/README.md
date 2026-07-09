@@ -18,7 +18,7 @@
 - 定义 `ServiceAuthorityProvider` / ServiceToken 管理器，供出站调用每一跳覆盖 `X-Firefly-Service-Authority`
 - 提供 gRPC client interceptor 和 metadata helper，统一保留用户 authority 与短 TTL authz sign，清理普通身份 metadata 和未知业务 metadata
 
-`x-firefly-authz-sign` 是服务侧验签输入。业务服务开启 `AuthzVerification` 后，`service.Context.VerifiedAuthzSign` 保存验签后的 JWS payload，`service.Context.ApiMethod` / `service.Context.ApiPath` 以该 payload 为可信来源。
+`x-firefly-authz-sign` 是服务侧验签输入。业务服务开启 `AuthzVerification` 后，`service.Context.VerifiedAuthzSign` 保存验签后的 JWS payload，`service.Context.RouteMethod` / `service.Context.RoutePath` 以该 payload 为可信来源。
 
 `service.Context.AppId` 只表示用户身份中的 app_id；当前这一跳的调用方应用 ID 使用 `service.Context.InvokeAppId`。`service.Context.ServiceAppId / ServiceInstanceId` 只表示当前业务服务自身身份，用于本地日志、OTel 和数据库链路排障，不参与 authz 权限元组。新代码优先使用 `service.Context.UserContext`、`InvokeServiceAppId`、`TargetServiceAppId` 和 `DecisionContext`。
 
