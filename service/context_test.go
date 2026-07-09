@@ -23,8 +23,10 @@ func TestBuildContext(t *testing.T) {
 		constant.SubjectType, constant.SubjectTypeUser,
 		constant.InvokeAppId, "app-1",
 		constant.TargetAppId, "order-app",
-		constant.ApiMethod, constant.RequestMethodGrpcString,
-		constant.ApiPath, "/acme.order.v1.OrderService/List",
+		constant.RouteMethod, constant.RequestMethodGrpcString,
+		constant.RoutePath, "/acme.order.v1.OrderService/List",
+		constant.TargetMethod, constant.RequestMethodGrpcString,
+		constant.TargetPath, "/acme.order.v1.OrderService/List",
 		constant.DecisionId, "decision-1",
 		constant.AuthzSign, "signed-context",
 		constant.OrgIds, "org-1",
@@ -46,8 +48,11 @@ func TestBuildContext(t *testing.T) {
 	if value.SubjectType != constant.SubjectTypeUser || value.InvokeAppId != "app-1" || value.TargetAppId != "order-app" {
 		t.Fatalf("unexpected authz identity fields: %+v", value)
 	}
-	if value.ApiMethod != constant.RequestMethodGrpcString || value.ApiPath != "/acme.order.v1.OrderService/List" {
+	if value.RouteMethod != constant.RequestMethodGrpcString || value.RoutePath != "/acme.order.v1.OrderService/List" {
 		t.Fatalf("unexpected api fields: %+v", value)
+	}
+	if value.TargetMethod != constant.RequestMethodGrpcString || value.TargetPath != "/acme.order.v1.OrderService/List" {
+		t.Fatalf("unexpected target fields: %+v", value)
 	}
 	if value.DecisionId != "decision-1" {
 		t.Fatalf("unexpected decision id: %+v", value)
@@ -60,6 +65,9 @@ func TestBuildContext(t *testing.T) {
 	}
 	if value.DecisionContext == nil || value.DecisionContext.TargetAppId != "order-app" {
 		t.Fatalf("unexpected grouped decision context: %+v", value)
+	}
+	if value.DecisionContext.TargetMethod != constant.RequestMethodGrpcString || value.DecisionContext.TargetPath != "/acme.order.v1.OrderService/List" {
+		t.Fatalf("unexpected grouped decision target fields: %+v", value.DecisionContext)
 	}
 	if value.DecisionContext.InvokeAppId != "app-1" {
 		t.Fatalf("unexpected grouped decision invoke fields: %+v", value.DecisionContext)
@@ -147,8 +155,8 @@ func TestBuildVerifiedContext_UsesServiceAppIdAsTargetExpectation(t *testing.T) 
 			"app_id":  "user-app",
 		},
 		"target_service_app_id": "svc-b",
-		"api_method":            constant.RequestMethodGrpcString,
-		"api_path":              "/acme.test.v1.TestService/Get",
+		"route_method":          constant.RequestMethodGrpcString,
+		"route_path":            "/acme.test.v1.TestService/Get",
 		"decision":              testAuthzDecisionAllow,
 		"decision_id":           "decision-1",
 		"iat":                   now.Unix(),
@@ -189,8 +197,8 @@ func TestBuildVerifiedContext_RequiresServiceAppIdWhenVerificationEnabled(t *tes
 			"app_id":  "user-app",
 		},
 		"target_service_app_id": "svc-a",
-		"api_method":            constant.RequestMethodGrpcString,
-		"api_path":              "/acme.test.v1.TestService/Get",
+		"route_method":          constant.RequestMethodGrpcString,
+		"route_path":            "/acme.test.v1.TestService/Get",
 		"decision":              testAuthzDecisionAllow,
 		"decision_id":           "decision-1",
 		"iat":                   now.Unix(),

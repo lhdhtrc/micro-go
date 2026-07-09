@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	testAuthzKid           = "default"
-	testAuthzIssuer        = "firefly-authz"
-	testAuthzDecisionAllow = "allow"
+	testAuthzKid           = constant.AuthzSignDefaultKid
+	testAuthzIssuer        = constant.AuthzSignDefaultIssuer
+	testAuthzDecisionAllow = constant.AuthzSignDecisionAllow
 )
 
 func TestVerifyAuthzSign(t *testing.T) {
@@ -31,8 +31,8 @@ func TestVerifyAuthzSign(t *testing.T) {
 		"subject_type":  constant.SubjectTypeUser,
 		"invoke_app_id": "user-app",
 		"target_app_id": "app-target",
-		"api_method":    constant.RequestMethodGrpcString,
-		"api_path":      "/acme.order.v1.OrderService/List",
+		"route_method":  constant.RequestMethodGrpcString,
+		"route_path":    "/acme.order.v1.OrderService/List",
 		"decision":      testAuthzDecisionAllow,
 		"decision_id":   "decision-1",
 		"user_context": map[string]any{
@@ -47,11 +47,11 @@ func TestVerifyAuthzSign(t *testing.T) {
 	})
 
 	claims, err := VerifyAuthzSign(raw, AuthzSignVerificationOptions{
-		PublicKeys:        map[string]ed25519.PublicKey{testAuthzKid: publicKey},
-		Issuer:            testAuthzIssuer,
-		ExpectedApiMethod: constant.RequestMethodGrpcString,
-		ExpectedApiPath:   "/acme.order.v1.OrderService/List",
-		Now:               func() time.Time { return now },
+		PublicKeys:          map[string]ed25519.PublicKey{testAuthzKid: publicKey},
+		Issuer:              testAuthzIssuer,
+		ExpectedRouteMethod: constant.RequestMethodGrpcString,
+		ExpectedRoutePath:   "/acme.order.v1.OrderService/List",
+		Now:                 func() time.Time { return now },
 	})
 	if err != nil {
 		t.Fatalf("verify authz sign failed: %v", err)
@@ -91,8 +91,8 @@ func TestVerifyAuthzSign_DerivesRuntimeFieldsFromStructuredClaims(t *testing.T) 
 		},
 		"invoke_service_app_id": "service-a",
 		"target_service_app_id": "svc-app",
-		"api_method":            constant.RequestMethodGrpcString,
-		"api_path":              "/acme.test.v1.TestService/Get",
+		"route_method":          constant.RequestMethodGrpcString,
+		"route_path":            "/acme.test.v1.TestService/Get",
 		"decision":              testAuthzDecisionAllow,
 		"decision_id":           "decision-1",
 		"iat":                   now.Unix(),
@@ -100,11 +100,11 @@ func TestVerifyAuthzSign_DerivesRuntimeFieldsFromStructuredClaims(t *testing.T) 
 	})
 
 	claims, err := VerifyAuthzSign(raw, AuthzSignVerificationOptions{
-		PublicKeys:        map[string]ed25519.PublicKey{testAuthzKid: publicKey},
-		Issuer:            testAuthzIssuer,
-		ExpectedApiMethod: constant.RequestMethodGrpcString,
-		ExpectedApiPath:   "/acme.test.v1.TestService/Get",
-		Now:               func() time.Time { return now },
+		PublicKeys:          map[string]ed25519.PublicKey{testAuthzKid: publicKey},
+		Issuer:              testAuthzIssuer,
+		ExpectedRouteMethod: constant.RequestMethodGrpcString,
+		ExpectedRoutePath:   "/acme.test.v1.TestService/Get",
+		Now:                 func() time.Time { return now },
 	})
 	if err != nil {
 		t.Fatalf("verify authz sign failed: %v", err)
@@ -126,6 +126,82 @@ func TestVerifyAuthzSign_DerivesRuntimeFieldsFromStructuredClaims(t *testing.T) 
 	}
 }
 
+func TestVerifyAuthzSign_VerifiesTargetMethodPathForTranscodedHTTP(t *testing.T) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key failed: %v", err)
+	}
+
+	now := time.Unix(1710000000, 0).UTC()
+	raw := signTestAuthzSign(t, privateKey, testAuthzKid, map[string]any{
+		"iss":                   testAuthzIssuer,
+		"sub":                   "anonymous",
+		"subject_type":          constant.SubjectTypeAnonymous,
+		"target_app_id":         "svc-auth",
+		"target_service_app_id": "svc-auth",
+		"route_method":          "POST",
+		"route_path":            "/v1/auth/login",
+		"target_method":         constant.RequestMethodGrpcString,
+		"target_path":           "/acme.auth.v1.AuthService/Login",
+		"decision":              testAuthzDecisionAllow,
+		"decision_id":           "decision-1",
+		"iat":                   now.Unix(),
+		"exp":                   now.Add(time.Minute).Unix(),
+	})
+
+	claims, err := VerifyAuthzSign(raw, AuthzSignVerificationOptions{
+		PublicKeys:           map[string]ed25519.PublicKey{testAuthzKid: publicKey},
+		Issuer:               testAuthzIssuer,
+		ExpectedTargetMethod: constant.RequestMethodGrpcString,
+		ExpectedTargetPath:   "/acme.auth.v1.AuthService/Login",
+		Now:                  func() time.Time { return now },
+	})
+	if err != nil {
+		t.Fatalf("verify authz sign failed: %v", err)
+	}
+	if claims.RouteMethod != "POST" || claims.RoutePath != "/v1/auth/login" {
+		t.Fatalf("unexpected api fields: %+v", claims)
+	}
+	if claims.TargetMethod != constant.RequestMethodGrpcString || claims.TargetPath != "/acme.auth.v1.AuthService/Login" {
+		t.Fatalf("unexpected target fields: %+v", claims)
+	}
+}
+
+func TestVerifyAuthzSign_RejectsMismatchedTargetPath(t *testing.T) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key failed: %v", err)
+	}
+
+	now := time.Unix(1710000000, 0).UTC()
+	raw := signTestAuthzSign(t, privateKey, testAuthzKid, map[string]any{
+		"iss":                   testAuthzIssuer,
+		"sub":                   "anonymous",
+		"subject_type":          constant.SubjectTypeAnonymous,
+		"target_app_id":         "svc-auth",
+		"target_service_app_id": "svc-auth",
+		"route_method":          "POST",
+		"route_path":            "/v1/auth/login",
+		"target_method":         constant.RequestMethodGrpcString,
+		"target_path":           "/acme.auth.v1.AuthService/Login",
+		"decision":              testAuthzDecisionAllow,
+		"decision_id":           "decision-1",
+		"iat":                   now.Unix(),
+		"exp":                   now.Add(time.Minute).Unix(),
+	})
+
+	_, err = VerifyAuthzSign(raw, AuthzSignVerificationOptions{
+		PublicKeys:           map[string]ed25519.PublicKey{testAuthzKid: publicKey},
+		Issuer:               testAuthzIssuer,
+		ExpectedTargetMethod: constant.RequestMethodGrpcString,
+		ExpectedTargetPath:   "/acme.auth.v1.AuthService/Register",
+		Now:                  func() time.Time { return now },
+	})
+	if !errors.Is(err, ErrAuthzSignInvalidClaims) {
+		t.Fatalf("expected invalid claims for mismatched target path, got %v", err)
+	}
+}
+
 func TestVerifyAuthzSign_RejectsFlatIdentityClaims(t *testing.T) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -141,8 +217,8 @@ func TestVerifyAuthzSign_RejectsFlatIdentityClaims(t *testing.T) {
 		"app_id":        "user-app",
 		"invoke_app_id": "user-app",
 		"target_app_id": "app-target",
-		"api_method":    constant.RequestMethodGrpcString,
-		"api_path":      "/acme.order.v1.OrderService/List",
+		"route_method":  constant.RequestMethodGrpcString,
+		"route_path":    "/acme.order.v1.OrderService/List",
 		"decision":      testAuthzDecisionAllow,
 		"decision_id":   "decision-1",
 		"iat":           now.Unix(),
@@ -172,8 +248,8 @@ func TestVerifyAuthzSign_RejectsServiceSubjectWithoutInvokeServiceAppId(t *testi
 		"invoke_app_id":         "service-a",
 		"target_app_id":         "service-b",
 		"target_service_app_id": "service-b",
-		"api_method":            constant.RequestMethodGrpcString,
-		"api_path":              "/acme.serviceb.v1.ServiceB/Get",
+		"route_method":          constant.RequestMethodGrpcString,
+		"route_path":            "/acme.serviceb.v1.ServiceB/Get",
 		"decision":              testAuthzDecisionAllow,
 		"decision_id":           "decision-1",
 		"iat":                   now.Unix(),
@@ -202,8 +278,8 @@ func TestVerifyAuthzSign_RejectsMissingDecision(t *testing.T) {
 		"subject_type":  constant.SubjectTypeUser,
 		"invoke_app_id": "user-app",
 		"target_app_id": "app-target",
-		"api_method":    constant.RequestMethodGrpcString,
-		"api_path":      "/acme.order.v1.OrderService/List",
+		"route_method":  constant.RequestMethodGrpcString,
+		"route_path":    "/acme.order.v1.OrderService/List",
 		"decision_id":   "decision-1",
 		"user_context": map[string]any{
 			"user_id": "user-1",
@@ -240,8 +316,8 @@ func TestVerifyAuthzSign_RejectsInvalidSignature(t *testing.T) {
 		"subject_type":  constant.SubjectTypeUser,
 		"invoke_app_id": "user-app",
 		"target_app_id": "app-target",
-		"api_method":    constant.RequestMethodGrpcString,
-		"api_path":      "/acme.order.v1.OrderService/List",
+		"route_method":  constant.RequestMethodGrpcString,
+		"route_path":    "/acme.order.v1.OrderService/List",
 		"decision":      testAuthzDecisionAllow,
 		"decision_id":   "decision-1",
 		"user_context": map[string]any{
@@ -275,8 +351,8 @@ func TestVerifyAuthzSign_RejectsExpiredContext(t *testing.T) {
 		"subject_type":  constant.SubjectTypeUser,
 		"invoke_app_id": "user-app",
 		"target_app_id": "app-target",
-		"api_method":    constant.RequestMethodGrpcString,
-		"api_path":      "/acme.order.v1.OrderService/List",
+		"route_method":  constant.RequestMethodGrpcString,
+		"route_path":    "/acme.order.v1.OrderService/List",
 		"decision":      testAuthzDecisionAllow,
 		"decision_id":   "decision-1",
 		"user_context": map[string]any{
@@ -311,7 +387,7 @@ func TestVerifyAuthzSign_RejectsMissingMethod(t *testing.T) {
 		"invoke_app_id": "user-app",
 		"target_app_id": "app-target",
 		"resource_type": constant.RequestMethodGrpcString,
-		"api_path":      "/acme.order.v1.OrderService/List",
+		"route_path":    "/acme.order.v1.OrderService/List",
 		"decision":      testAuthzDecisionAllow,
 		"decision_id":   "decision-1",
 		"user_context": map[string]any{

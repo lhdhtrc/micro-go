@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	testAuthzKid           = "default"
-	testAuthzIssuer        = "firefly-authz"
-	testAuthzDecisionAllow = "allow"
+	testAuthzKid           = constant.AuthzSignDefaultKid
+	testAuthzIssuer        = constant.AuthzSignDefaultIssuer
+	testAuthzDecisionAllow = constant.AuthzSignDecisionAllow
 )
 
 func TestNewServiceContextUnaryInterceptor(t *testing.T) {
@@ -144,8 +144,10 @@ func TestNewServiceContextUnaryInterceptor_VerifiesAuthzSign(t *testing.T) {
 			"post_ids":  []string{"post-1"},
 		},
 		"target_service_app_id": "svc-app",
-		"api_method":            constant.RequestMethodGrpcString,
-		"api_path":              "/acme.test.v1.TestService/Get",
+		"route_method":          "POST",
+		"route_path":            "/v1/test/get",
+		"target_method":         constant.RequestMethodGrpcString,
+		"target_path":           "/acme.test.v1.TestService/Get",
 		"decision":              testAuthzDecisionAllow,
 		"decision_id":           "decision-1",
 		"iat":                   now.Unix(),
@@ -176,8 +178,11 @@ func TestNewServiceContextUnaryInterceptor_VerifiesAuthzSign(t *testing.T) {
 		if value.ServiceAppId != "svc-app" || value.ServiceInstanceId != "svc-instance-1" {
 			t.Fatalf("expected local service identity to survive authz sign verification: %+v", value)
 		}
-		if value.ApiMethod != constant.RequestMethodGrpcString || value.ApiPath != "/acme.test.v1.TestService/Get" {
-			t.Fatalf("expected verified method/path to populate service context: %+v", value)
+		if value.RouteMethod != "POST" || value.RoutePath != "/v1/test/get" {
+			t.Fatalf("expected verified api method/path to populate service context: %+v", value)
+		}
+		if value.TargetMethod != constant.RequestMethodGrpcString || value.TargetPath != "/acme.test.v1.TestService/Get" {
+			t.Fatalf("expected verified target method/path to populate service context: %+v", value)
 		}
 		if value.UserContext == nil || value.UserContext.AppId != "user-app" {
 			t.Fatalf("expected grouped user context: %+v", value)
