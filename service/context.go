@@ -49,10 +49,14 @@ type Context struct {
 	InvokeAppId string
 	// TargetAppId 表示 authz 对 route.app_id 的判定语义。
 	TargetAppId string
-	// ApiMethod 表示本次授权动作，HTTP 为方法名，gRPC 为 GRPC。
-	ApiMethod string
-	// ApiPath 表示本次授权资源路径，HTTP 为入口 path，gRPC 为 FullMethod。
-	ApiPath string
+	// RouteMethod 表示本次授权动作，HTTP 为方法名，gRPC 为 GRPC。
+	RouteMethod string
+	// RoutePath 表示本次授权资源路径，HTTP 为入口 path，gRPC 为 FullMethod。
+	RoutePath string
+	// TargetMethod 表示本次授权结果最终投递到后端服务的目标动作。
+	TargetMethod string
+	// TargetPath 表示本次授权结果最终投递到后端服务的目标资源。
+	TargetPath string
 	// DecisionId 表示 authz allow 决策 ID。
 	DecisionId string
 	// AuthzSignJWS 保存 authz 注入的原始 compact JWS，来自 x-firefly-authz-sign metadata。
@@ -97,10 +101,14 @@ type DecisionContext struct {
 	InvokeAppId string
 	// TargetAppId 表示 authz 对 route.app_id 的判定语义。
 	TargetAppId string
-	// ApiMethod 表示本次授权动作，HTTP 为方法名，gRPC 为 GRPC。
-	ApiMethod string
-	// ApiPath 表示本次授权资源路径，HTTP 为入口 path，gRPC 为 FullMethod。
-	ApiPath string
+	// RouteMethod 表示本次授权动作，HTTP 为方法名，gRPC 为 GRPC。
+	RouteMethod string
+	// RoutePath 表示本次授权资源路径，HTTP 为入口 path，gRPC 为 FullMethod。
+	RoutePath string
+	// TargetMethod 表示本次授权结果最终投递到后端服务的目标动作。
+	TargetMethod string
+	// TargetPath 表示本次授权结果最终投递到后端服务的目标资源。
+	TargetPath string
 	// DecisionId 表示 authz allow 决策 ID。
 	DecisionId string
 }
@@ -214,10 +222,14 @@ func buildContextFromMetadata(ctx context.Context, options BuildContextOptions) 
 		value.SubjectType = ParseMetaKey(md, constant.SubjectType)
 		// TargetAppId 是 authz 对 route.app_id 的判定语义，不是 route 层字段名。
 		value.TargetAppId = ParseMetaKey(md, constant.TargetAppId)
-		// ApiMethod 是 authz 注入的授权动作读取便利，可信版本仍以 AuthzSign 为准。
-		value.ApiMethod = ParseMetaKey(md, constant.ApiMethod)
-		// ApiPath 是 authz 注入的授权路径读取便利，可信版本仍以 AuthzSign 为准。
-		value.ApiPath = ParseMetaKey(md, constant.ApiPath)
+		// RouteMethod 是 authz 注入的授权动作读取便利，可信版本仍以 AuthzSign 为准。
+		value.RouteMethod = ParseMetaKey(md, constant.RouteMethod)
+		// RoutePath 是 authz 注入的授权路径读取便利，可信版本仍以 AuthzSign 为准。
+		value.RoutePath = ParseMetaKey(md, constant.RoutePath)
+		// TargetMethod 是 authz 注入的后端目标动作读取便利，可信版本仍以 AuthzSign 为准。
+		value.TargetMethod = ParseMetaKey(md, constant.TargetMethod)
+		// TargetPath 是 authz 注入的后端目标路径读取便利，可信版本仍以 AuthzSign 为准。
+		value.TargetPath = ParseMetaKey(md, constant.TargetPath)
 		// DecisionId 用于把业务日志和 authz allow 决策关联起来。
 		value.DecisionId = ParseMetaKey(md, constant.DecisionId)
 		// AuthzSignJWS 保存原始 JWS，后续 BuildVerifiedContext 会用它验签。
@@ -259,10 +271,14 @@ func (c *Context) applyVerifiedAuthzSign(authzSign *AuthzSign) {
 	c.InvokeAppId = authzSign.InvokeAppId
 	// TargetAppId 以签名 claim 为准。
 	c.TargetAppId = authzSign.TargetAppId
-	// ApiMethod 以签名 claim 为准。
-	c.ApiMethod = authzSign.ApiMethod
-	// ApiPath 以签名 claim 为准。
-	c.ApiPath = authzSign.ApiPath
+	// RouteMethod 以签名 claim 为准。
+	c.RouteMethod = authzSign.RouteMethod
+	// RoutePath 以签名 claim 为准。
+	c.RoutePath = authzSign.RoutePath
+	// TargetMethod 以签名 claim 为准。
+	c.TargetMethod = authzSign.TargetMethod
+	// TargetPath 以签名 claim 为准。
+	c.TargetPath = authzSign.TargetPath
 	// DecisionId 以签名 claim 为准。
 	c.DecisionId = authzSign.DecisionId
 	// OrgIds 以签名 claim 为准。
@@ -334,14 +350,16 @@ func (c *Context) rebuildDecisionContext() {
 		return
 	}
 	// 决策上下文只表达 authz 判定结果和本跳调用关系。
-	if c.SubjectType != "" || c.InvokeAppId != "" || c.TargetAppId != "" || c.ApiMethod != "" || c.ApiPath != "" || c.DecisionId != "" {
+	if c.SubjectType != "" || c.InvokeAppId != "" || c.TargetAppId != "" || c.RouteMethod != "" || c.RoutePath != "" || c.TargetMethod != "" || c.TargetPath != "" || c.DecisionId != "" {
 		c.DecisionContext = &DecisionContext{
-			SubjectType: c.SubjectType,
-			InvokeAppId: c.InvokeAppId,
-			TargetAppId: c.TargetAppId,
-			ApiMethod:   c.ApiMethod,
-			ApiPath:     c.ApiPath,
-			DecisionId:  c.DecisionId,
+			SubjectType:  c.SubjectType,
+			InvokeAppId:  c.InvokeAppId,
+			TargetAppId:  c.TargetAppId,
+			RouteMethod:  c.RouteMethod,
+			RoutePath:    c.RoutePath,
+			TargetMethod: c.TargetMethod,
+			TargetPath:   c.TargetPath,
+			DecisionId:   c.DecisionId,
 		}
 	} else {
 		c.DecisionContext = nil

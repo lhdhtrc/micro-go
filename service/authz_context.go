@@ -11,8 +11,6 @@ import (
 	"github.com/fireflycore/go-micro/constant"
 )
 
-const authzDecisionAllow = "allow"
-
 var (
 	// ErrAuthzSignMissing 表示入口请求没有携带 authz 注入的 compact JWS。
 	ErrAuthzSignMissing = errors.New("authz sign is missing")
@@ -62,10 +60,14 @@ type AuthzSign struct {
 	InvokeAppId string `json:"invoke_app_id"`
 	// TargetAppId 表示 authz 对 route.app_id 的判定语义，来自 target_app_id。
 	TargetAppId string `json:"target_app_id"`
-	// ApiMethod 表示本次授权动作，取值见 constant.RequestMethod*String。
-	ApiMethod string `json:"api_method"`
-	// ApiPath 表示本次授权资源路径，HTTP 为入口 path，gRPC 为 FullMethod。
-	ApiPath string `json:"api_path"`
+	// RouteMethod 表示本次授权动作，取值见 constant.RequestMethod*String。
+	RouteMethod string `json:"route_method"`
+	// RoutePath 表示本次授权资源路径，HTTP 为入口 path，gRPC 为 FullMethod。
+	RoutePath string `json:"route_path"`
+	// TargetMethod 表示本次授权结果最终投递到后端服务的目标动作。
+	TargetMethod string `json:"target_method,omitempty"`
+	// TargetPath 表示本次授权结果最终投递到后端服务的目标资源。
+	TargetPath string `json:"target_path,omitempty"`
 	// Decision 表示 authz 判定结果，当前只接受 allow。
 	Decision string `json:"decision"`
 	// DecisionId 表示 authz 对本次判定生成的唯一 ID。
@@ -112,10 +114,14 @@ type AuthzSignVerificationOptions struct {
 	PublicKeys map[string]ed25519.PublicKey
 	// Issuer 非空时要求 iss 必须与该值一致。
 	Issuer string
-	// ExpectedApiMethod 非空时要求 api_method 必须匹配当前入口授权动作。
-	ExpectedApiMethod string
-	// ExpectedApiPath 非空时要求 api_path 必须匹配当前入口资源路径。
-	ExpectedApiPath string
+	// ExpectedRouteMethod 非空时要求 route_method 必须匹配当前入口授权动作。
+	ExpectedRouteMethod string
+	// ExpectedRoutePath 非空时要求 route_path 必须匹配当前入口资源路径。
+	ExpectedRoutePath string
+	// ExpectedTargetMethod 非空时要求 target_method 必须匹配当前服务入口目标动作。
+	ExpectedTargetMethod string
+	// ExpectedTargetPath 非空时要求 target_path 必须匹配当前服务入口目标资源。
+	ExpectedTargetPath string
 	// ClockSkew 表示允许的本机时钟偏差。
 	ClockSkew time.Duration
 	// Now 允许测试注入固定时间；生产环境留空使用 time.Now。
@@ -236,7 +242,7 @@ func validateAuthzSignClaims(claims *AuthzSign, options AuthzSignVerificationOpt
 		return ErrAuthzSignInvalidClaims
 	}
 	// 主体、目标应用、授权动作和资源路径是服务侧验签后的最小可信字段。
-	if claims.SubjectId == "" || claims.SubjectType == "" || claims.TargetAppId == "" || claims.ApiMethod == "" || claims.ApiPath == "" {
+	if claims.SubjectId == "" || claims.SubjectType == "" || claims.TargetAppId == "" || claims.RouteMethod == "" || claims.RoutePath == "" {
 		return ErrAuthzSignInvalidClaims
 	}
 	// 非匿名请求必须有调用方 app_id；公共接口允许 invoke_app_id 为空。
@@ -268,7 +274,11 @@ func validateAuthzSignClaims(claims *AuthzSign, options AuthzSignVerificationOpt
 		return ErrAuthzSignInvalidClaims
 	}
 	// 当前只有 allow 结果会被 authz 注入业务服务，缺失 decision 或非 allow 都不能进入业务层。
-	if claims.Decision != authzDecisionAllow {
+	if claims.Decision != constant.AuthzSignDecisionAllow {
+		return ErrAuthzSignInvalidClaims
+	}
+	// target_method/target_path 是服务侧绑定校验字段；要么都不写，要么成对出现。
+	if (claims.TargetMethod == "") != (claims.TargetPath == "") {
 		return ErrAuthzSignInvalidClaims
 	}
 
@@ -290,15 +300,41 @@ func validateAuthzSignClaims(claims *AuthzSign, options AuthzSignVerificationOpt
 		return ErrAuthzSignNotYetValid
 	}
 	// 授权动作非空时必须匹配当前入口；gRPC 场景通常是 GRPC。
-	if options.ExpectedApiMethod != "" && !strings.EqualFold(claims.ApiMethod, options.ExpectedApiMethod) {
+	if options.ExpectedRouteMethod != "" && !strings.EqualFold(claims.RouteMethod, options.ExpectedRouteMethod) {
 		return ErrAuthzSignInvalidClaims
 	}
 	// 资源路径非空时必须匹配当前 FullMethod 或 HTTP path。
-	if options.ExpectedApiPath != "" && claims.ApiPath != options.ExpectedApiPath {
+	if options.ExpectedRoutePath != "" && claims.RoutePath != options.ExpectedRoutePath {
 		return ErrAuthzSignInvalidClaims
+	}
+	targetMethod, targetPath := effectiveAuthzTarget(claims)
+	if options.ExpectedTargetMethod != "" {
+		if targetMethod == "" || !strings.EqualFold(targetMethod, options.ExpectedTargetMethod) {
+			return ErrAuthzSignInvalidClaims
+		}
+	}
+	if options.ExpectedTargetPath != "" {
+		if targetPath == "" || targetPath != options.ExpectedTargetPath {
+			return ErrAuthzSignInvalidClaims
+		}
 	}
 	// 所有必要 claim 和本地期望都通过后，认为上下文可信。
 	return nil
+}
+
+func effectiveAuthzTarget(claims *AuthzSign) (string, string) {
+	// 新版 AuthzSign 使用 target_method/target_path 绑定后端目标。
+	if claims == nil {
+		return "", ""
+	}
+	if claims.TargetMethod != "" || claims.TargetPath != "" {
+		return claims.TargetMethod, claims.TargetPath
+	}
+	// 兼容未显式写 target 的原生 gRPC sign：route_* 本身就是后端 gRPC 目标。
+	if strings.EqualFold(claims.RouteMethod, constant.RequestMethodGrpcString) {
+		return claims.RouteMethod, claims.RoutePath
+	}
+	return "", ""
 }
 
 func normalizeVerifiedAuthzSign(claims *AuthzSign) {

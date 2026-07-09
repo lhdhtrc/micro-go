@@ -80,13 +80,13 @@ func buildServiceContext(ctx context.Context, info *grpc.UnaryServerInfo, buildO
 
 	// 每次请求复制验签选项，避免把当前 gRPC 方法推导出的期望值写回共享配置。
 	resolvedVerification := *verification
-	// gRPC 服务端入口的授权动作固定为 GRPC。
-	if resolvedVerification.ExpectedApiMethod == "" {
-		resolvedVerification.ExpectedApiMethod = constant.RequestMethodGrpcString
+	// gRPC 服务端入口的后端目标动作固定为 GRPC。
+	if resolvedVerification.ExpectedTargetMethod == "" {
+		resolvedVerification.ExpectedTargetMethod = constant.RequestMethodGrpcString
 	}
-	// 未显式配置资源路径时，使用当前 gRPC FullMethod 校验授权结果不可跨方法复用。
-	if resolvedVerification.ExpectedApiPath == "" && info != nil {
-		resolvedVerification.ExpectedApiPath = info.FullMethod
+	// 未显式配置目标路径时，使用当前 gRPC FullMethod 校验授权结果不可跨方法复用。
+	if resolvedVerification.ExpectedTargetPath == "" && info != nil {
+		resolvedVerification.ExpectedTargetPath = info.FullMethod
 	}
 
 	// 把本次请求解析出的期望值放回 buildOptions，交给 service 层完成实际验签。

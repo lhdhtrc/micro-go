@@ -9,14 +9,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fireflycore/go-micro/constant"
 	"github.com/fireflycore/go-micro/service"
 )
 
 const (
 	// DefaultKid 是当前 authz JWS 默认使用的固定 kid。
-	DefaultKid = "default"
+	DefaultKid = constant.AuthzSignDefaultKid
 	// DefaultIssuer 是当前 authz JWS 默认签发方。
-	DefaultIssuer = "firefly-authz"
+	DefaultIssuer = constant.AuthzSignDefaultIssuer
 	// DefaultClockSkew 是服务侧验签允许的默认时钟偏差。
 	DefaultClockSkew = 5 * time.Second
 )
