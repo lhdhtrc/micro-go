@@ -162,7 +162,7 @@ grpc.NewServer(
   grpc.StatsHandler(gm.NewOtelServerStatsHandler()),
   grpc.ChainUnaryInterceptor(
     gm.NewAccessLogger(log),
-    gm.ValidationErrorToInvalidArgument(),
+    gm.ErrorToStatus(),
   ),
 )
 ```
@@ -231,7 +231,7 @@ s := grpc.NewServer(
   grpc.StatsHandler(gm.NewOtelServerStatsHandler()),
   grpc.ChainUnaryInterceptor(
     gm.NewAccessLogger(log),
-    gm.ValidationErrorToInvalidArgument(),
+    gm.ErrorToStatus(),
   ),
 )
 _ = s
