@@ -18,7 +18,7 @@
 
 主要功能：
 - `NewAccessLogger`: 访问日志（结构化字段 + zap/otelzap 适配）。
-- `ValidationErrorToInvalidArgument`: 将 protovalidate 错误映射为 `codes.InvalidArgument`。
+- `ErrorToStatus`: 服务出口错误归一化，把 `werror`、`status.Error`、`protovalidate`、context error 和历史 sentinel 映射为 gRPC status。
 - `NewOtelServerStatsHandler`: OTel gRPC Server StatsHandler（用于 trace/metrics 自动埋点）。
 
 详细文档请参考：[grpc/README.md](./grpc/README.md)

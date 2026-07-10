@@ -89,13 +89,7 @@ gm.ErrorToStatus(
 )
 ```
 
-### 4. Validation 兼容映射 (`ValidationErrorToInvalidArgument`)
-
-将 `protovalidate.ValidationError` 统一转换为 `codes.InvalidArgument`，避免在上层重复判断。
-
-该函数保留为兼容入口；新服务建议使用 `ErrorToStatus`。
-
-### 5. OpenTelemetry gRPC 埋点（StatsHandler）
+### 4. OpenTelemetry gRPC 埋点（StatsHandler）
 
 `NewOtelServerStatsHandler` 返回 `stats.Handler`，用于 `grpc.StatsHandler(...)` 挂载到服务端，自动完成 trace/metrics 采集与 W3C `traceparent` 传播。
 
