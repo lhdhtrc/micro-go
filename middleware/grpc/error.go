@@ -98,25 +98,6 @@ func ErrorToStatus(options ...ErrorToStatusOption) grpc.UnaryServerInterceptor {
 	}
 }
 
-// ValidationErrorToInvalidArgument 将 protovalidate.ValidationError 映射为 InvalidArgument。
-//
-// 该函数仅为兼容旧服务保留；新服务应使用 ErrorToStatus。
-func ValidationErrorToInvalidArgument() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		resp, err := handler(ctx, req)
-		if err == nil {
-			return resp, nil
-		}
-
-		var ve *protovalidate.ValidationError
-		if errors.As(err, &ve) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		return resp, err
-	}
-}
-
 func buildErrorToStatusOptions(options ...ErrorToStatusOption) ErrorToStatusOptions {
 	out := ErrorToStatusOptions{
 		ValidationCode:            codes.InvalidArgument,
