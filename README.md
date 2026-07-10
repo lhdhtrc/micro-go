@@ -58,12 +58,23 @@ s := grpc.NewServer(
 				// PublicKeys: map[string]ed25519.PublicKey{"default": authzPublicKey},
 			},
 		}),
-		gm.ValidationErrorToInvalidArgument(),
 		gm.NewAccessLogger(log),
+		gm.ErrorToStatus(),
 	),
 )
 _ = s
 ```
+
+业务方法推荐用 `werror` 表达错误语义，再由 `gm.ErrorToStatus()` 在出口统一转成 gRPC status：
+
+```go
+return nil, werror.InvalidArgument(
+    "验证码已过期/不存在",
+    werror.WithReason("VERIFY_CODE_EXPIRED"),
+)
+```
+
+`gm.ErrorToStatus()` 建议放在 `gm.NewAccessLogger(...)` 之后作为更内层的拦截器，这样访问日志记录的是归一化后的最终 gRPC code。
 
 如果要面向新的服务调用模型，建议优先使用 `invocation` 包提供的能力：
 
@@ -85,6 +96,7 @@ _ = s
 详细文档请参考各子包目录下的 README：
 
 - [invocation](./invocation/README.md)：新的服务调用模型（推荐）
+- [werror](./werror/README.md)：业务错误语义与 gRPC status 映射基础
 - [service](./service/README.md)：服务内统一主上下文模型
 - [go-consul/agent](/Users/lhdht/product/synergy/firefly/golang/go-consul/agent/README.md)：业务服务与本机 sidecar-agent 的联动桥接
 - [middleware](./middleware/README.md)：中间件（gRPC/HTTP）
