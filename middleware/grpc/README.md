@@ -52,11 +52,50 @@ s := grpc.NewServer(
 )
 ```
 
-### 3. Validation 映射 (`ValidationErrorToInvalidArgument`)
+### 3. 出口错误映射 (`ErrorToStatus`)
+
+`ErrorToStatus` 是推荐的 gRPC 服务出口错误归一化中间件，用于把业务错误和框架错误统一转成 gRPC status：
+
+- 已经是 `status.Error` 或实现 `GRPCStatus()` 的错误会保持原语义。
+- `werror` 业务错误会按自身携带的 gRPC code 返回。
+- `protovalidate.ValidationError` 默认映射为 `codes.InvalidArgument`。
+- `context.Canceled` / `context.DeadlineExceeded` 分别映射为 `codes.Canceled` / `codes.DeadlineExceeded`。
+- 历史 sentinel error 可通过 `WithErrorMapping(...)` 显式映射。
+- 未分类普通 error 默认映射为 `codes.Internal`，避免泄漏为 `codes.Unknown`。
+
+业务代码推荐使用 `github.com/fireflycore/go-micro/werror` 表达错误语义：
+
+```go
+return werror.InvalidArgument(
+    "验证码已过期/不存在",
+    werror.WithReason("VERIFY_CODE_EXPIRED"),
+)
+```
+
+临时兼容历史 sentinel：
+
+```go
+gm.ErrorToStatus(
+    gm.WithErrorMapping(ErrVerifyCodeExpired, codes.InvalidArgument, "验证码已过期/不存在"),
+)
+```
+
+如果生产环境不希望把未分类错误原文返回给客户端，可配置：
+
+```go
+gm.ErrorToStatus(
+    gm.WithExposeDefaultErrorMessage(false),
+    gm.WithDefaultErrorMessage("internal server error"),
+)
+```
+
+### 4. Validation 兼容映射 (`ValidationErrorToInvalidArgument`)
 
 将 `protovalidate.ValidationError` 统一转换为 `codes.InvalidArgument`，避免在上层重复判断。
 
-### 4. OpenTelemetry gRPC 埋点（StatsHandler）
+该函数保留为兼容入口；新服务建议使用 `ErrorToStatus`。
+
+### 5. OpenTelemetry gRPC 埋点（StatsHandler）
 
 `NewOtelServerStatsHandler` 返回 `stats.Handler`，用于 `grpc.StatsHandler(...)` 挂载到服务端，自动完成 trace/metrics 采集与 W3C `traceparent` 传播。
 
@@ -74,8 +113,10 @@ s := grpc.NewServer(
             // 生产环境建议配置 AuthzVerification，让服务侧信任验签后的 JWS payload。
             // AuthzVerification: &service.AuthzSignVerificationOptions{...},
         }),
-        gm.ValidationErrorToInvalidArgument(),
         gm.NewAccessLogger(accessLog),
+        gm.ErrorToStatus(),
     ),
 )
 ```
+
+`ErrorToStatus` 建议放在 `NewAccessLogger` 之后作为更内层的出口中间件。这样业务 handler 返回的错误会先归一化为最终 gRPC code，再被访问日志记录，避免日志中的 `status` 仍显示未归一化的 `Unknown`。
