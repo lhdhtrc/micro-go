@@ -9,6 +9,7 @@ import (
 	"github.com/fireflycore/go-micro/constant"
 	"github.com/fireflycore/go-micro/logger"
 	"github.com/fireflycore/go-micro/service"
+	"github.com/fireflycore/go-micro/werror"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -74,6 +75,15 @@ func NewAccessLogger(log *logger.AccessLogger, options ...AccessLoggerOptions) g
 			zap.Uint64("duration", uint64(elapsed.Microseconds())),
 			zap.Uint32("status", uint32(code)),
 		)
+		// 只记录稳定错误身份，不默认记录可能包含标识或敏感值的 metadata。
+		if errorInfo, ok := werror.ErrorInfoOf(err); ok {
+			if errorInfo.GetDomain() != "" {
+				fields = append(fields, zap.String("error_domain", errorInfo.GetDomain()))
+			}
+			if errorInfo.GetReason() != "" {
+				fields = append(fields, zap.String("error_reason", errorInfo.GetReason()))
+			}
+		}
 
 		// 请求体可序列化时，记录请求报文。
 		if request, e := json.Marshal(req); e == nil {

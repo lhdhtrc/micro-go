@@ -35,6 +35,7 @@
 - **链路关联**：通过 `otelzap` 从 `ctx` 自动关联 trace（要求服务端启用 OTel stats handler，日志使用 `zap.Any("ctx", ctx)`）。
 - **身份识别**：优先读取进程内 `service.Context`，必要时只回退读取普通身份 metadata，不从未签名资源字段推导授权动作和路径。
 - **性能字段**：`duration`（微秒）、`status`（gRPC code）、`path` 等。
+- **错误聚合**：结构化错误额外记录 `error_domain / error_reason`；ErrorInfo metadata 默认不写日志。
 
 **用法**：
 
@@ -57,7 +58,7 @@ s := grpc.NewServer(
 `ErrorToStatus` 是推荐的 gRPC 服务出口错误归一化中间件，用于把业务错误和框架错误统一转成 gRPC status：
 
 - 已经是 `status.Error` 或实现 `GRPCStatus()` 的错误会保持原语义。
-- `werror` 业务错误会按自身携带的 gRPC code 返回。
+- `werror` 业务错误会按自身携带的 gRPC code 返回，并保留标准 `google.rpc.ErrorInfo` 中的 domain、reason 和 metadata。
 - `protovalidate.ValidationError` 默认映射为 `codes.InvalidArgument`。
 - `context.Canceled` / `context.DeadlineExceeded` 分别映射为 `codes.Canceled` / `codes.DeadlineExceeded`。
 - 历史 sentinel error 可通过 `WithErrorMapping(...)` 显式映射。
@@ -68,6 +69,7 @@ s := grpc.NewServer(
 ```go
 return werror.InvalidArgument(
     "验证码已过期/不存在",
+    werror.WithDomain("lhdht.secure"),
     werror.WithReason("VERIFY_CODE_EXPIRED"),
 )
 ```
