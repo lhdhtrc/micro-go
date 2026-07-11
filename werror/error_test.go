@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"testing"
 
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func TestError_GRPCStatus(t *testing.T) {
-	err := InvalidArgument("验证码已过期/不存在", WithReason("VERIFY_CODE_EXPIRED"))
+	err := InvalidArgument(
+		"验证码已过期/不存在",
+		WithDomain("lhdht.secure"),
+		WithReason("VERIFY_CODE_EXPIRED"),
+		WithDetail("verifyType", "email"),
+	)
 
 	st, ok := status.FromError(err)
 	if !ok {
@@ -21,6 +27,20 @@ func TestError_GRPCStatus(t *testing.T) {
 	}
 	if st.Message() != "验证码已过期/不存在" {
 		t.Fatalf("unexpected message: %q", st.Message())
+	}
+	details := st.Details()
+	if len(details) != 1 {
+		t.Fatalf("expected 1 status detail, got %d", len(details))
+	}
+	info, ok := details[0].(*errdetails.ErrorInfo)
+	if !ok {
+		t.Fatalf("expected ErrorInfo, got %T", details[0])
+	}
+	if info.GetDomain() != "lhdht.secure" || info.GetReason() != "VERIFY_CODE_EXPIRED" {
+		t.Fatalf("unexpected error identity: domain=%q reason=%q", info.GetDomain(), info.GetReason())
+	}
+	if got := info.GetMetadata()["verifyType"]; got != "email" {
+		t.Fatalf("unexpected metadata: %q", got)
 	}
 }
 
@@ -50,14 +70,17 @@ func TestFromError_FindsWrappedError(t *testing.T) {
 }
 
 func TestError_IsMatchesReasonAndCode(t *testing.T) {
-	sentinel := InvalidArgument("验证码错误", WithReason("VERIFY_CODE_INVALID"))
-	err := InvalidArgument("图形验证码错误", WithReason("VERIFY_CODE_INVALID"))
+	sentinel := InvalidArgument("验证码错误", WithDomain("lhdht.secure"), WithReason("VERIFY_CODE_INVALID"))
+	err := InvalidArgument("图形验证码错误", WithDomain("lhdht.secure"), WithReason("VERIFY_CODE_INVALID"))
 
 	if !errors.Is(err, sentinel) {
 		t.Fatalf("expected errors.Is to match by reason and code")
 	}
-	if errors.Is(PermissionDenied("验证码错误", WithReason("VERIFY_CODE_INVALID")), sentinel) {
+	if errors.Is(PermissionDenied("验证码错误", WithDomain("lhdht.secure"), WithReason("VERIFY_CODE_INVALID")), sentinel) {
 		t.Fatalf("different code must not match sentinel")
+	}
+	if errors.Is(InvalidArgument("验证码错误", WithDomain("lhdht.auth"), WithReason("VERIFY_CODE_INVALID")), sentinel) {
+		t.Fatalf("different domain must not match sentinel")
 	}
 }
 
@@ -78,5 +101,34 @@ func TestCodeOf(t *testing.T) {
 	}
 	if got := CodeOf(errors.New("plain")); got != codes.Unknown {
 		t.Fatalf("expected %v, got %v", codes.Unknown, got)
+	}
+}
+
+func TestErrorInfoOf_StatusError(t *testing.T) {
+	err := NotFound(
+		"用户不存在",
+		WithDomain("lhdht.user"),
+		WithReason("USER_NOT_FOUND"),
+		WithDetail("userId", "user-1"),
+	)
+
+	info, ok := ErrorInfoOf(err.GRPCStatus().Err())
+	if !ok {
+		t.Fatal("expected ErrorInfo")
+	}
+	if info.GetDomain() != "lhdht.user" || info.GetReason() != "USER_NOT_FOUND" {
+		t.Fatalf("unexpected ErrorInfo: %+v", info)
+	}
+	info.Metadata["userId"] = "changed"
+
+	again, ok := ErrorInfoOf(err)
+	if !ok || again.GetMetadata()["userId"] != "user-1" {
+		t.Fatalf("expected immutable ErrorInfo metadata, got %+v", again)
+	}
+}
+
+func TestErrorInfoOf_WithoutStructuredIdentity(t *testing.T) {
+	if _, ok := ErrorInfoOf(Internal("internal error", WithDetail("operation", "query"))); ok {
+		t.Fatal("plain status error must not expose ErrorInfo")
 	}
 }

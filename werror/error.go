@@ -4,6 +4,7 @@ package werror
 import (
 	"errors"
 
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -15,6 +16,7 @@ import (
 type Error struct {
 	code    codes.Code
 	message string
+	domain  string
 	reason  string
 	details map[string]string
 	cause   error
@@ -22,6 +24,13 @@ type Error struct {
 
 // Option 用于定制 Error。
 type Option func(*Error)
+
+// WithDomain 设置错误所属的稳定业务域。
+func WithDomain(domain string) Option {
+	return func(err *Error) {
+		err.domain = domain
+	}
+}
 
 // WithReason 设置稳定、可供程序读取的错误原因标识。
 func WithReason(reason string) Option {
@@ -104,7 +113,7 @@ func (err *Error) Unwrap() error {
 	return err.cause
 }
 
-// Is 支持 errors.Is 按指针或相同 reason 与 code 匹配哨兵错误。
+// Is 支持 errors.Is 按指针或相同 domain、reason 与 code 匹配哨兵错误。
 func (err *Error) Is(target error) bool {
 	if err == nil {
 		return target == nil
@@ -116,7 +125,10 @@ func (err *Error) Is(target error) bool {
 	if err == targetErr {
 		return true
 	}
-	return targetErr.reason != "" && err.reason == targetErr.reason && err.code == targetErr.code
+	return targetErr.reason != "" &&
+		err.domain == targetErr.domain &&
+		err.reason == targetErr.reason &&
+		err.code == targetErr.code
 }
 
 // GRPCStatus 返回对应的 gRPC status。
@@ -124,7 +136,16 @@ func (err *Error) GRPCStatus() *status.Status {
 	if err == nil {
 		return status.New(codes.OK, "")
 	}
-	return status.New(err.code, err.Message())
+	st := status.New(err.code, err.Message())
+	info := err.ErrorInfo()
+	if info == nil {
+		return st
+	}
+	withDetails, detailErr := st.WithDetails(info)
+	if detailErr != nil {
+		return st
+	}
+	return withDetails
 }
 
 // Code 返回错误携带的 gRPC code。
@@ -149,6 +170,14 @@ func (err *Error) Message() string {
 	return err.code.String()
 }
 
+// Domain 返回错误所属的稳定业务域。
+func (err *Error) Domain() string {
+	if err == nil {
+		return ""
+	}
+	return err.domain
+}
+
 // Reason 返回稳定、可供程序读取的错误原因标识。
 func (err *Error) Reason() string {
 	if err == nil {
@@ -169,6 +198,18 @@ func (err *Error) Details() map[string]string {
 	return out
 }
 
+// ErrorInfo 返回用于跨 gRPC/HTTP 传输的标准错误详情。
+func (err *Error) ErrorInfo() *errdetails.ErrorInfo {
+	if err == nil || err.reason == "" {
+		return nil
+	}
+	return &errdetails.ErrorInfo{
+		Domain:   err.domain,
+		Reason:   err.reason,
+		Metadata: err.Details(),
+	}
+}
+
 // FromError 从错误链中查找 Error。
 func FromError(err error) (*Error, bool) {
 	if err == nil {
@@ -177,6 +218,28 @@ func FromError(err error) (*Error, bool) {
 	var wrappedErr *Error
 	if errors.As(err, &wrappedErr) {
 		return wrappedErr, true
+	}
+	return nil, false
+}
+
+// ErrorInfoOf 从结构化错误或 gRPC status 中提取标准 ErrorInfo。
+func ErrorInfoOf(err error) (*errdetails.ErrorInfo, bool) {
+	if err == nil {
+		return nil, false
+	}
+	if wrappedErr, ok := FromError(err); ok {
+		if info := wrappedErr.ErrorInfo(); info != nil {
+			return cloneErrorInfo(info), true
+		}
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		return nil, false
+	}
+	for _, detail := range st.Details() {
+		if info, ok := detail.(*errdetails.ErrorInfo); ok {
+			return cloneErrorInfo(info), true
+		}
 	}
 	return nil, false
 }
@@ -219,6 +282,21 @@ func normalizeCode(code codes.Code) codes.Code {
 		return codes.Unknown
 	}
 	return code
+}
+
+func cloneErrorInfo(info *errdetails.ErrorInfo) *errdetails.ErrorInfo {
+	if info == nil {
+		return nil
+	}
+	metadata := make(map[string]string, len(info.GetMetadata()))
+	for key, value := range info.GetMetadata() {
+		metadata[key] = value
+	}
+	return &errdetails.ErrorInfo{
+		Domain:   info.GetDomain(),
+		Reason:   info.GetReason(),
+		Metadata: metadata,
+	}
 }
 
 // Canceled 创建 codes.Canceled 错误。
