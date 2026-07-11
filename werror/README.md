@@ -4,10 +4,10 @@
 
 ## 服务错误目录
 
-每个业务服务应在自己的 `internal/errors` 包内集中定义错误，不要在 usecase/data/service 中重复写 code、reason 和默认消息：
+每个业务服务应在自己的 `internal/error` 包内集中定义错误，包名统一为 `ierror`，不要在 usecase/data/service 中重复写 code、reason 和默认消息：
 
 ```go
-package errors
+package ierror
 
 import (
     "github.com/fireflycore/go-micro/werror"
@@ -31,7 +31,7 @@ var (
 业务代码通过定义创建错误：
 
 ```go
-return errors.TokenInvalid.New(werror.WithCause(err))
+return ierror.TokenInvalid.New(werror.WithCause(err))
 ```
 
 动态消息参数使用 metadata，不拼进 reason：
