@@ -21,6 +21,32 @@ func TestErrorToStatus_MapsWrappedError(t *testing.T) {
 	assertStatusCode(t, err, codes.InvalidArgument, "验证码已过期/不存在")
 }
 
+func TestErrorToStatus_PreservesErrorInfo(t *testing.T) {
+	interceptor := ErrorToStatus()
+	definition := werror.Definition{
+		Code:    codes.NotFound,
+		Domain:  "lhdht.user",
+		Reason:  "USER_NOT_FOUND",
+		Message: "用户不存在",
+	}
+
+	_, err := interceptor(context.Background(), nil, &grpc.UnaryServerInfo{FullMethod: "/test"}, func(ctx context.Context, req any) (any, error) {
+		return nil, definition.New(werror.WithDetail("userId", "user-1"))
+	})
+	assertStatusCode(t, err, codes.NotFound, "用户不存在")
+
+	info, ok := werror.ErrorInfoOf(err)
+	if !ok {
+		t.Fatal("expected ErrorInfo")
+	}
+	if info.GetDomain() != definition.Domain || info.GetReason() != definition.Reason {
+		t.Fatalf("unexpected ErrorInfo: %+v", info)
+	}
+	if info.GetMetadata()["userId"] != "user-1" {
+		t.Fatalf("unexpected ErrorInfo metadata: %+v", info.GetMetadata())
+	}
+}
+
 func TestErrorToStatus_MapsJoinedWrappedError(t *testing.T) {
 	interceptor := ErrorToStatus()
 
