@@ -27,7 +27,19 @@
 
 启用 `AuthzVerification` 时必须提供 `ServiceAppId`。服务侧验签会用它绑定 `AuthzSign.target_app_id`，避免把其他服务的 allow 结果复用到当前服务。
 
-### 2. Access Logger (`NewAccessLogger`)
+### 2. Request Scope (`NewRequestScopeUnaryInterceptor`)
+
+按 gRPC FullMethod 的显式策略提取并授权请求数据作用域：
+
+- 未登记 RPC 不读取 `app_id/tenant_id`。
+- 已登记 RPC 未显式传入作用域时，继续使用业务接口定义的默认范围。
+- 显式传入作用域但未配置授权器时 fail-close。
+- 授权拒绝返回 `PermissionDenied`，不得删除参数后回退登录上下文。
+- `Allowed=true` 的决策仍会检查有效期和授权集合覆盖关系。
+
+该拦截器应放在 `NewServiceContextUnaryInterceptor` 之后，使产品域授权器可以读取已构建并按需验签的 `service.Context`。
+
+### 3. Access Logger (`NewAccessLogger`)
 
 提供 gRPC 访问日志记录功能，输出结构化字段（zap fields）。
 
@@ -53,7 +65,7 @@ s := grpc.NewServer(
 )
 ```
 
-### 3. 出口错误映射 (`ErrorToStatus`)
+### 4. 出口错误映射 (`ErrorToStatus`)
 
 `ErrorToStatus` 是推荐的 gRPC 服务出口错误归一化中间件，用于把业务错误和框架错误统一转成 gRPC status：
 
@@ -91,7 +103,7 @@ gm.ErrorToStatus(
 )
 ```
 
-### 4. OpenTelemetry gRPC 埋点（StatsHandler）
+### 5. OpenTelemetry gRPC 埋点（StatsHandler）
 
 `NewOtelServerStatsHandler` 返回 `stats.Handler`，用于 `grpc.StatsHandler(...)` 挂载到服务端，自动完成 trace/metrics 采集与 W3C `traceparent` 传播。
 
@@ -108,6 +120,10 @@ s := grpc.NewServer(
             ServiceInstanceId: bootstrapConfig.App.InstanceId,
             // 生产环境建议配置 AuthzVerification，让服务侧信任验签后的 JWS payload。
             // AuthzVerification: &service.AuthzSignVerificationOptions{...},
+        }),
+        gm.NewRequestScopeUnaryInterceptor(gm.RequestScopeInterceptorOptions{
+            Registry:   requestScopeRegistry,
+            Authorizer: requestScopeAuthorizer,
         }),
         gm.NewAccessLogger(accessLog),
         gm.ErrorToStatus(),
