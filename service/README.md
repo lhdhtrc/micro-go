@@ -10,6 +10,8 @@
 - 提供 `WithContext(...)` / `FromContext(...)` / `MustFromContext(...)`
 - 提供 `BuildContext(...)` 把入站 metadata 与当前 OTel span 结构化为服务内主上下文
 - 提供 `VerifyAuthzSign(...)` / `BuildVerifiedContext(...)` 对 `x-firefly-authz-sign` JWS 做本地验签
+- 定义 `RequestScope`、`AuthorizedScope` 和按 gRPC FullMethod 注册的 `RequestScopePolicyRegistry`
+- 提供 `ExtractRequestScope(...)` 与 `RequestScopeFromContext(...)`，承载进程内请求数据作用域
 
 它不负责：
 
@@ -18,6 +20,7 @@
 - 出站 metadata 拼装
 - 下游服务调用
 - token 解析或在线权限判断
+- LHDHT 等产品域的数据权限事实和授权策略
 
 当前推荐分工：
 
@@ -43,3 +46,13 @@
 `service.Context.AuthzSignJWS` 保存原始 `x-firefly-authz-sign` compact JWS；`service.Context.VerifiedAuthzSign` 保存验签后的 payload。
 
 `service.Context.RouteMethod` / `RoutePath` 只在 `BuildVerifiedContext(...)` 本地验签成功后可信；普通 metadata 只作为读取便利，不是信任根。验签后的 `AuthzSign` 必须携带结构化 `user_context`，以及字符串字段 `invoke_service_app_id` / `target_service_app_id`，不再接受旧平铺身份 payload。
+
+## 请求数据作用域
+
+请求数据作用域与登录上下文、接口授权上下文相互独立：
+
+- `service.Context.AppId/TenantId` 表示用户登录身份，不能被业务请求参数覆盖。
+- `RequestScope` 表示 RPC 显式携带的可选数据范围。
+- `AuthorizedScope` 表示产品域授权器批准后的应用、租户集合或全量维度。
+
+只有注册到 `RequestScopePolicyRegistry` 的 RPC 才会把顶层 `app_id/tenant_id` 解释为请求作用域。未登记方法中的同名字段仍是普通业务字段。`RequestScopeContext` 只在当前进程内使用，不转换为 metadata，也不自动传播到下游服务。
