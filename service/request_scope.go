@@ -151,8 +151,6 @@ type RequestScopeDecision struct {
 	Authorized AuthorizedScope
 	// DecisionID 是本次授权决策的审计标识。
 	DecisionID string
-	// PolicyVersion 是生成本次决策时使用的策略版本。
-	PolicyVersion string
 	// Reason 保存拒绝原因或安全排障信息。
 	Reason string
 	// ExpiresAt 是本次决策的失效时间；零值表示框架不额外检查过期时间。

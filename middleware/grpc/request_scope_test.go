@@ -39,9 +39,8 @@ func TestNewRequestScopeUnaryInterceptorAllowsExplicitScope(t *testing.T) {
 				t.Fatalf("unexpected authorization request: %+v", request)
 			}
 			return service.RequestScopeDecision{
-				Allowed:       true,
-				DecisionID:    "scope-decision-1",
-				PolicyVersion: "v1",
+				Allowed:    true,
+				DecisionID: "scope-decision-1",
 				Authorized: service.AuthorizedScope{
 					AppIDs:    []string{"app-1"},
 					TenantIDs: []string{"tenant-1"},
